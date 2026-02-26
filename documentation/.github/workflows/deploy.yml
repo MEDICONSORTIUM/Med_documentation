@@ -1,0 +1,41 @@
+name: Deploy Docusaurus to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: documentation/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: documentation
+
+      - name: Build website
+        run: npm run build
+        working-directory: documentation
+
+      - name: Deploy to GitHub Pages
+        run: npm run deploy
+        working-directory: documentation
+        env:
+          GIT_USER: MEDICONSORTIUM
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
