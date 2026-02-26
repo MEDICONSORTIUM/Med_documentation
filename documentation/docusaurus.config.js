@@ -23,12 +23,12 @@ const config = {
   url: 'https://med-documentation.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/my-docs/',
+  baseUrl: '/Med_documentation/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'MEDICONSORTIUM', // Usually your GitHub org/user name.
-  projectName: 'my-docs', // Usually your repo name.
+  projectName: 'Med_documentation', // Usually your repo name.
 
   deploymentBranch: 'gh-pages',
 
