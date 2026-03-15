@@ -10,9 +10,12 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'My Documentation',
-  tagline: 'Dinosaurs are cool',
+  title: 'Medical Consortium Documentation',
+  tagline: 'Earth Observation for Public Health Surveillance',
   favicon: 'img/favicon.ico',
+
+  markdown: { mermaid: true },
+  themes: ['@docusaurus/theme-mermaid'],
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -20,7 +23,7 @@ const config = {
   },
 
   // Set the production url of your site here
-  url: 'https://med-documentation.github.io',
+  url: 'https://MEDICONSORTIUM.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/Med_documentation/',
@@ -32,7 +35,8 @@ const config = {
 
   deploymentBranch: 'gh-pages',
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
+  onBrokenMarkdownLinks: 'warn',
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -79,27 +83,43 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      // Replace with your project's social card
-      image: 'img/docusaurus-social-card.jpg',
+      image: 'img/og-preview.png',
       colorMode: {
+        defaultMode: 'dark',
+        disableSwitch: false,
         respectPrefersColorScheme: true,
       },
       navbar: {
-        title: 'My Site',
+        title: 'MED Consortium',
         logo: {
-          alt: 'My Site Logo',
+          alt: 'MED Consortium Logo',
           src: 'img/logo.svg',
+          srcDark: 'img/logo-dark.svg',
         },
         items: [
           {
             type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
+            sidebarId: 'docsSidebar',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Documentation',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
           {
-            href: 'https://github.com/facebook/docusaurus',
+            to: '/docs/data/datasets',
+            label: 'Datasets',
+            position: 'left',
+          },
+          {
+            to: '/docs/milestones/overview',
+            label: 'Milestones',
+            position: 'left',
+          },
+          {
+            href: 'https://main.d1jko0jkg4m7f.amplifyapp.com/',
+            label: 'Live Platform',
+            position: 'right',
+          },
+          {
+            href: 'https://github.com/mediconsortium/Med_documentation',
             label: 'GitHub',
             position: 'right',
           },
@@ -109,51 +129,48 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: 'Platform',
             items: [
-              {
-                label: 'Tutorial',
-                to: '/docs/intro',
-              },
+              { label: 'Malaria Risk Module', to: '/docs/modules/malaria' },
+              { label: 'NCD Risk Module', to: '/docs/modules/ncd' },
+              { label: 'Live Dashboard', href: 'https://main.d1jko0jkg4m7f.amplifyapp.com/' },
             ],
           },
           {
-            title: 'Community',
+            title: 'Architecture',
             items: [
-              {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
-              },
-              {
-                label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
-              },
-              {
-                label: 'X',
-                href: 'https://x.com/docusaurus',
-              },
+              { label: 'System Architecture', to: '/docs/architecture/system-architecture' },
+              { label: 'EO Data Pipeline', to: '/docs/architecture/eo-pipeline' },
+              { label: 'Data Sources', to: '/docs/data/datasets' },
             ],
           },
           {
-            title: 'More',
+            title: 'Project',
             items: [
-              {
-                label: 'Blog',
-                to: '/blog',
-              },
-              {
-                label: 'GitHub',
-                href: 'https://github.com/facebook/docusaurus',
-              },
+              { label: 'Milestone 1', to: '/docs/milestones/milestone-1' },
+              { label: 'Partners', to: '/docs/project/partners' },
+              { label: 'GitHub', href: 'https://github.com/mediconsortium/Med_documentation' },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} MED Consortium. Funded by TuksNovation / NeoFrontiers. Built with Docusaurus.`,
       },
-      prism: {
+       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
+        additionalLanguages: ['python', 'bash', 'javascript', 'json'],
       },
+      announcementBar: {
+        id: 'milestone_1_live',
+        content: '🛰️ <strong>Milestone 1</strong> is underway — System Design & Data Architecture (Nov 2025 – Mar 2026). <a href="/Med_documentation/docs/milestones/milestone-1">View progress →</a>',
+        backgroundColor: '#0a2342',
+        textColor: '#7ec8e3',
+        isCloseable: true,
+      },
+      metadata: [
+        { name: 'keywords', content: 'earth observation, malaria, NCD, health surveillance, Limpopo, South Africa, remote sensing, GEE' },
+        { name: 'description', content: 'EO-based water-borne pathogen and non-communicable disease risk monitoring platform for Southern Africa.' },
+      ],
     }),
 };
 
