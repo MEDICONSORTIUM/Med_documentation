@@ -1,47 +1,70 @@
 ---
-sidebar_position: 1
+id: intro
+title: Platform Overview
+sidebar_label: Platform Overview
+slug: /intro
 ---
 
-# Tutorial Intro
+# MED Consortium — EO Health Surveillance Platform
 
-Let's discover **Docusaurus in less than 5 minutes**.
+**Using Earth Observation data to monitor water-borne pathogens and non-communicable disease risk factors across Southern Africa.**
 
-## Getting Started
+:::info Current status
+Milestone 1 (System Design & Data Architecture) is in progress: **1 November 2025 – 16 March 2026**.
+:::
 
-Get started by **creating a new site**.
+## What is this platform?
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+The MED Consortium platform integrates **satellite Earth Observation (EO) imagery** with **epidemiological and public health datasets** to generate near-real-time risk maps for two disease categories:
 
-### What you'll need
+| Module | Focus | Geography |
+|--------|-------|-----------|
+| **Malaria Risk** | Water-borne vector habitat, soil moisture, surface temperature | Limpopo Province (ward level) |
+| **NCD Risk** | Air quality, heat stress, land-cover, lifestyle factors | Southern Africa (country → province → municipality) |
 
-- [Node.js](https://nodejs.org/en/download/) version 20.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+Data is sourced from Google Earth Engine and processed through a six-stage automated pipeline before being surfaced on the interactive dashboard.
 
-## Generate a new site
+## Key capabilities
 
-Generate a new Docusaurus site using the **classic template**.
+- 🛰️ **Automated EO data ingestion** — Sentinel-2/3, Landsat 8/9, MODIS via GEE
+- 🗺️ **Interactive Leaflet maps** with ward-level drill-down and time sliders (Jan 2025 – Jan 2026)
+- 📈 **Dynamic risk scoring** — composite index from soil moisture, LST, NDWI, population density
+- 🔔 **Risk-level filtering** — High / Moderate / Low with popup summaries
+- 📅 **13-month temporal coverage** — monthly snapshots for trend analysis
+- 🏥 **Partner-validated outputs** for UCT, CSIR, NICD and DoH
 
-The classic template will automatically be added to your project after you run the command:
+## Architecture in brief
 
-```bash
-npm init docusaurus@latest my-website classic
+```
+Data Sources → Ingestion → Pre-process & QA → Feature Extraction
+    → Spatial-Temporal Fusion → Risk Modelling → Dashboard Output
 ```
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+See [System Architecture](/docs/architecture/system-architecture) and [EO Data Pipeline](/docs/architecture/eo-pipeline) for full detail.
 
-The command also installs all necessary dependencies you need to run Docusaurus.
+## Live platform
 
-## Start your site
+The platform is deployed on AWS Amplify:
 
-Run the development server:
+👉 **[https://main.d1jko0jkg4m7f.amplifyapp.com/](https://main.d1jko0jkg4m7f.amplifyapp.com/)**
 
-```bash
-cd my-website
-npm run start
-```
+> Best experienced on desktop. Mobile (portrait) support is in active development.
 
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
+## Project context
 
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
+| Item | Detail |
+|------|--------|
+| **Funder** | TuksNovation / NeoFrontiers |
+| **Period** | 1 November 2025 – 31 October 2026 |
+| **Total budget** | R 1,000,000 |
+| **Director** | Kagisho Montjane |
+| **Validation partners** | UCT · CSIR · NICD · DoH |
 
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+## Quick navigation
+
+- [System Architecture →](/docs/architecture/system-architecture)
+- [EO Data Pipeline →](/docs/architecture/eo-pipeline)
+- [Malaria Risk Module →](/docs/modules/malaria)
+- [NCD Risk Module →](/docs/modules/ncd)
+- [Datasets →](/docs/data/datasets)
+- [Milestone 1 →](/docs/milestones/milestone-1)
