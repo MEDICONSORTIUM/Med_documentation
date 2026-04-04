@@ -14,8 +14,38 @@ const config = {
   tagline: 'Earth Observation for Public Health Surveillance',
   favicon: 'img/favicon.ico',
 
-  markdown: { mermaid: true },
+  markdown: {
+    mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
   themes: ['@docusaurus/theme-mermaid'],
+
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'preconnect',
+        href: 'https://fonts.googleapis.com',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'preconnect',
+        href: 'https://fonts.gstatic.com',
+        crossorigin: 'anonymous',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap',
+      },
+    },
+  ],
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -35,8 +65,9 @@ const config = {
 
   deploymentBranch: 'gh-pages',
 
+  trailingSlash: false,
+
   onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -60,6 +91,7 @@ const config = {
         },
         blog: {
           showReadingTime: true,
+          
           feedOptions: {
             type: ['rss', 'atom'],
             xslt: true,
@@ -72,6 +104,11 @@ const config = {
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
           onUntruncatedBlogPosts: 'warn',
+          blogTitle: 'MED Consortium Blog',
+          blogDescription: 'Updates, research notes and field reports from the EO health surveillance platform team.',
+          blogSidebarCount: 'ALL',
+          blogSidebarTitle: 'All posts',
+          postsPerPage: 6,
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -86,15 +123,16 @@ const config = {
       image: 'img/og-preview.png',
       colorMode: {
         defaultMode: 'dark',
-        disableSwitch: false,
         respectPrefersColorScheme: true,
+        disableSwitch: false,
       },
       navbar: {
+        hideOnScroll: true,
         title: 'MED Consortium',
         logo: {
           alt: 'MED Consortium Logo',
           src: 'img/logo.svg',
-          srcDark: 'img/logo-dark.svg',
+         // srcDark: 'img/logo-dark.svg',
         },
         items: [
           {
@@ -113,6 +151,10 @@ const config = {
             label: 'Milestones',
             position: 'left',
           },
+          { to: '/blog', 
+            label: 'Blog', 
+            position: 'left' 
+          },
           {
             href: 'https://main.d1jko0jkg4m7f.amplifyapp.com/',
             label: 'Live Platform',
@@ -124,6 +166,12 @@ const config = {
             position: 'right',
           },
         ],
+      },
+      docs: {
+        sidebar: {
+          hideable: true,
+          autoCollapseCategories: true,
+        },
       },
       footer: {
         style: 'dark',
@@ -152,19 +200,30 @@ const config = {
               { label: 'GitHub', href: 'https://github.com/mediconsortium/Med_documentation' },
             ],
           },
+          {
+          title: 'Latest',
+          items: [
+            { label: 'Blog', to: '/blog' },
+            { label: 'Milestone 1', to: '/docs/milestones/milestone-1' },
+            { label: 'Partners', to: '/docs/project/partners' },
+            { label: 'GitHub', href: 'https://github.com/mediconsortium/Med_documentation'
+            },
+          ],
+            },
+          
         ],
         copyright: `Copyright © ${new Date().getFullYear()} MED Consortium. Funded by TuksNovation / NeoFrontiers. Built with Docusaurus.`,
       },
        prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
-        additionalLanguages: ['python', 'bash', 'javascript', 'json'],
+        additionalLanguages: ['python', 'bash', 'javascript', 'json', 'java'],
       },
       announcementBar: {
         id: 'milestone_1_live',
         content: '🛰️ <strong>Milestone 1</strong> is underway — System Design & Data Architecture (Nov 2025 – Mar 2026). <a href="/Med_documentation/docs/milestones/milestone-1">View progress →</a>',
-        backgroundColor: '#0a2342',
-        textColor: '#7ec8e3',
+        backgroundColor: '#0070f3',
+        textColor: '#ffffff',
         isCloseable: true,
       },
       metadata: [

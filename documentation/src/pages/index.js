@@ -93,9 +93,9 @@ export default function Home() {
       <div className="hero--med">
         <div className="container">
           {/* Eyebrow */}
-          <span className="badge--teal" style={{ marginBottom: '1.25rem', display: 'inline-block' }}>
+          <div className="badge--teal" style={{ marginBottom: '1.5rem' }}>
             🛰️ Milestone 1 in progress — Nov 2025 to Mar 2026
-          </span>
+          </div>
 
           <h1 className="hero__title">
             Earth Observation<br />for Public Health
@@ -121,7 +121,7 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="stats-row" style={{ marginTop: '3.5rem' }}>
+          <div className="stats-row" style={{ marginTop: '4rem' }}>
             {STATS.map((s, i) => (
               <div key={i} className="stat-item">
                 <span className="stat-item__value">{s.value}</span>
@@ -133,19 +133,11 @@ export default function Home() {
       </div>
 
       {/* ── Features ── */}
-      <div className="container" style={{ paddingTop: '3.5rem', paddingBottom: '1rem' }}>
-        <h2
-          style={{
-            fontFamily: 'Syne, sans-serif',
-            fontSize: '1.6rem',
-            fontWeight: 800,
-            letterSpacing: '-0.02em',
-            marginBottom: '0.25rem',
-          }}
-        >
+      <div className="container" style={{ paddingTop: '6rem', paddingBottom: '4rem' }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
           Platform capabilities
         </h2>
-        <p style={{ color: 'var(--med-muted)', marginBottom: 0 }}>
+        <p style={{ marginBottom: '3rem' }}>
           Six core capabilities powering the EO health surveillance system.
         </p>
 
@@ -164,25 +156,15 @@ export default function Home() {
       <div
         className="container"
         style={{
-          paddingTop: '1rem',
-          paddingBottom: '3.5rem',
-          borderTop: '1px solid rgba(2,128,144,0.15)',
-          marginTop: '2rem',
+          paddingTop: '4rem',
+          paddingBottom: '6rem',
+          borderTop: '1px solid var(--ifm-toc-border-color)',
         }}
       >
-        <h2
-          style={{
-            fontFamily: 'Syne, sans-serif',
-            fontSize: '1.4rem',
-            fontWeight: 800,
-            letterSpacing: '-0.02em',
-            marginBottom: '0.25rem',
-            marginTop: '2rem',
-          }}
-        >
+        <h2 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>
           Project milestones
         </h2>
-        <p style={{ color: 'var(--med-muted)', marginBottom: '1.25rem' }}>
+        <p style={{ marginBottom: '2rem' }}>
           Implementation period: 1 November 2025 – 31 October 2026 · Total budget: R 1,000,000
         </p>
 
@@ -224,22 +206,21 @@ export default function Home() {
       {/* ── Partners ── */}
       <div
         style={{
-          background: 'rgba(6, 14, 27, 0.6)',
-          borderTop: '1px solid rgba(2,128,144,0.15)',
-          borderBottom: '1px solid rgba(2,128,144,0.15)',
-          padding: '2rem 0',
+          background: 'var(--ifm-background-surface-color)',
+          borderTop: '1px solid var(--ifm-toc-border-color)',
+          borderBottom: '1px solid var(--ifm-toc-border-color)',
+          padding: '4rem 0',
         }}
       >
         <div className="container">
           <p
             style={{
-              fontFamily: 'Syne, sans-serif',
-              fontSize: '0.72rem',
-              fontWeight: 700,
+              fontSize: '0.75rem',
+              fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
-              color: 'var(--med-muted)',
-              marginBottom: '1rem',
+              color: 'var(--ifm-color-content-secondary)',
+              marginBottom: '1.5rem',
             }}
           >
             Partners &amp; institutions
@@ -253,16 +234,8 @@ export default function Home() {
       </div>
 
       {/* ── Quick Links ── */}
-      <div className="container" style={{ padding: '3.5rem 0' }}>
-        <h2
-          style={{
-            fontFamily: 'Syne, sans-serif',
-            fontSize: '1.4rem',
-            fontWeight: 800,
-            letterSpacing: '-0.02em',
-            marginBottom: '1.5rem',
-          }}
-        >
+      <div className="container" style={{ padding: '6rem 0' }}>
+        <h2 style={{ fontSize: '1.75rem', marginBottom: '2rem' }}>
           Quick access
         </h2>
 
@@ -287,25 +260,22 @@ export default function Home() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
-                padding: '1rem 1.25rem',
-                background: 'rgba(10,25,41,0.6)',
-                border: '1px solid rgba(2,128,144,0.2)',
-                borderRadius: '10px',
+                gap: '12px',
+                padding: '1.25rem 1.5rem',
+                background: 'var(--ifm-background-surface-color)',
+                border: '1px solid var(--ifm-toc-border-color)',
+                borderRadius: '8px',
                 textDecoration: 'none',
-                color: '#d4e4f0',
-                fontFamily: 'DM Sans, sans-serif',
+                color: 'var(--ifm-color-content)',
                 fontWeight: 500,
-                fontSize: '0.9rem',
-                transition: 'border-color 0.2s, background 0.2s',
+                fontSize: '0.95rem',
+                transition: 'border-color 0.2s, background-color 0.2s',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(2,200,224,0.5)';
-                e.currentTarget.style.background = 'rgba(2,128,144,0.1)';
+                e.currentTarget.style.borderColor = 'var(--ifm-color-content-secondary)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(2,128,144,0.2)';
-                e.currentTarget.style.background = 'rgba(10,25,41,0.6)';
+                e.currentTarget.style.borderColor = 'var(--ifm-toc-border-color)';
               }}
             >
               <span style={{ fontSize: '1.25rem' }}>{link.emoji}</span>
