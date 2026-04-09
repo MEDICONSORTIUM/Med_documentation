@@ -17,3 +17,71 @@ hola:
   label: Hola
   permalink: /hola
   description: Hola tag description
+
+google-earth-engine:
+  label: Google Earth Engine
+  permalink: /google-earth-engine
+
+python:
+  label: Python
+  permalink: /python
+
+tutorial:
+  label: Tutorial
+  permalink: /tutorial
+
+malaria:
+  label: Malaria
+  permalink: /malaria
+
+remote-sensing:
+  label: Remote Sensing
+  permalink: /remote-sensing
+
+milestone:
+  label: Milestone
+  permalink: /milestone
+
+earth-observation:
+  label: Earth Observation
+  permalink: /earth-observation
+
+limpopo:
+  label: Limpopo
+  permalink: /limpopo
+
+data:
+  label: Data
+  permalink: /data
+
+prototype:
+  label: Prototype
+  permalink: /prototype
+
+gee:
+  label: GEE
+  permalink: /gee
+
+machine-learning:
+  label: Machine Learning
+  permalink: /machine-learning
+
+eoha:
+  label: EOHA
+  permalink: /eoha
+
+ncd:
+  label: NCD
+  permalink: /ncd
+
+air-quality:
+  label: Air Quality
+  permalink: /air-quality
+
+southern-africa:
+  label: Southern Africa
+  permalink: /southern-africa
+
+leaflet:
+  label: Leaflet
+  permalink: /leaflet
