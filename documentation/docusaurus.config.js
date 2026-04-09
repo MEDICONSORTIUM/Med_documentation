@@ -4,7 +4,7 @@
 // There are various equivalent ways to declare your Docusaurus config.
 // See: https://docusaurus.io/docs/api/docusaurus-config
 
-import {themes as prismThemes} from 'prism-react-renderer';
+import { themes as prismThemes } from 'prism-react-renderer';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -12,7 +12,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 const config = {
   title: 'Medical Consortium Documentation',
   tagline: 'Earth Observation for Public Health Surveillance',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/M.jpg',
 
   markdown: {
     mermaid: true,
@@ -91,7 +91,7 @@ const config = {
         },
         blog: {
           showReadingTime: true,
-          
+
           feedOptions: {
             type: ['rss', 'atom'],
             xslt: true,
@@ -120,7 +120,7 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      image: 'img/og-preview.png',
+      image: 'img/M.jpg',
       colorMode: {
         defaultMode: 'dark',
         respectPrefersColorScheme: true,
@@ -131,8 +131,8 @@ const config = {
         title: 'MED Consortium',
         logo: {
           alt: 'MED Consortium Logo',
-          src: 'img/logo.svg',
-         // srcDark: 'img/logo-dark.svg',
+          src: 'img/M.jpg',
+          // srcDark: 'img/logo-dark.svg',
         },
         items: [
           {
@@ -151,9 +151,10 @@ const config = {
             label: 'Milestones',
             position: 'left',
           },
-          { to: '/blog', 
-            label: 'Blog', 
-            position: 'left' 
+          {
+            to: '/blog',
+            label: 'Blog',
+            position: 'left'
           },
           {
             href: 'https://main.d1jko0jkg4m7f.amplifyapp.com/',
@@ -201,20 +202,21 @@ const config = {
             ],
           },
           {
-          title: 'Latest',
-          items: [
-            { label: 'Blog', to: '/blog' },
-            { label: 'Milestone 1', to: '/docs/milestones/milestone-1' },
-            { label: 'Partners', to: '/docs/project/partners' },
-            { label: 'GitHub', href: 'https://github.com/mediconsortium/Med_documentation'
-            },
-          ],
-            },
-          
+            title: 'Latest',
+            items: [
+              { label: 'Blog', to: '/blog' },
+              { label: 'Milestone 1', to: '/docs/milestones/milestone-1' },
+              { label: 'Partners', to: '/docs/project/partners' },
+              {
+                label: 'GitHub', href: 'https://github.com/mediconsortium/Med_documentation'
+              },
+            ],
+          },
+
         ],
         copyright: `Copyright © ${new Date().getFullYear()} MED Consortium. Funded by TuksNovation / NeoFrontiers. Built with Docusaurus.`,
       },
-       prism: {
+      prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
         additionalLanguages: ['python', 'bash', 'javascript', 'json', 'java'],
