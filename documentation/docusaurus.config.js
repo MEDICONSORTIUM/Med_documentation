@@ -152,12 +152,6 @@ const config = {
             position: 'left',
           },
           {
-            type: 'docSidebar',
-            sidebarId: 'walkthroughSidebar',
-            label: 'Walkthrough',
-            position: 'left',
-          },
-          {
             to: '/blog',
             label: 'Blog',
             position: 'left'

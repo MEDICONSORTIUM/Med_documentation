@@ -68,4 +68,3 @@ The platform is deployed on AWS Amplify:
 - [NCD Risk Module →](/docs/modules/ncd)
 - [Datasets →](/docs/data/datasets)
 - [Milestone 1 →](/docs/milestones/milestone-1)
-- [Milestone 2 ->](/docs/milestones/milestone-2.md)
