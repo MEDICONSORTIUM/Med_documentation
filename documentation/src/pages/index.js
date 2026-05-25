@@ -197,6 +197,9 @@ export default function Home() {
           <Link to="/docs/milestones/milestone-1" className="btn-primary" style={{ fontSize: '0.875rem', padding: '10px 20px' }}>
             View Milestone 1 details
           </Link>
+          <Link to="/docs/milestones/milestone-2" className="btn-primary" style={{ fontSize: '0.875rem', padding: '10px 20px' }}>
+            View Milestone 2 details
+          </Link>
           <Link to="/docs/architecture/system-architecture" className="btn-outline" style={{ fontSize: '0.875rem', padding: '9px 20px' }}>
             System architecture →
           </Link>
@@ -227,7 +230,7 @@ export default function Home() {
           </p>
           <div className="partners-row" style={{ borderTop: 'none', paddingTop: 0 }}>
             {PARTNERS.map((p, i) => (
-              <span key={i} className="partner-pill">{p} </span>
+              <span key={i} className="partner-pill">{p}</span>
             ))}
           </div>
         </div>
