@@ -67,11 +67,18 @@ const sidebars = {
       label: 'Project',
       items: [
         'milestones/overview',
-        
+        'milestones/milestone-1',
         'milestones/milestone-2',
         
       ],
     },
+    {
+      type: 'category',
+      label: 'walkthrough',
+      items: [
+        'walkthrough/walkthrough',
+      ],
+    }
   ],
 
   // ─────────────────────────────────────────────────────────────────────────

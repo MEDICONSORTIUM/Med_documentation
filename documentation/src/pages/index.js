@@ -94,7 +94,7 @@ export default function Home() {
         <div className="container">
           {/* Eyebrow */}
           <div className="badge--teal" style={{ marginBottom: '1.5rem' }}>
-            🛰️ Milestone 1 in progress — Nov 2025 to Mar 2026
+            🛰️ Milestone 2 in progress — Mar 2026 to Aug 2026
           </div>
 
           <h1 className="hero__title">
