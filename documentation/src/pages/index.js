@@ -227,7 +227,7 @@ export default function Home() {
           </p>
           <div className="partners-row" style={{ borderTop: 'none', paddingTop: 0 }}>
             {PARTNERS.map((p, i) => (
-              <span key={i} className="partner-pill">{p}</span>
+              <span key={i} className="partner-pill">{p} </span>
             ))}
           </div>
         </div>
