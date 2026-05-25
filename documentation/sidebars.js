@@ -1,9 +1,11 @@
+// sidebars.js
 // @ts-check
 
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
   docsSidebar: [
     'intro',
+
     {
       type: 'category',
       label: 'Architecture',
@@ -13,6 +15,7 @@ const sidebars = {
         'architecture/uml-diagrams',
       ],
     },
+
     {
       type: 'category',
       label: 'Design Specification',
@@ -25,6 +28,7 @@ const sidebars = {
         'design-specification/operational-workflow',
       ],
     },
+
     {
       type: 'category',
       label: 'Modules',
@@ -33,6 +37,7 @@ const sidebars = {
         'modules/ncd',
       ],
     },
+
     {
       type: 'category',
       label: 'Data',
@@ -41,6 +46,22 @@ const sidebars = {
         'data/google-earth-engine',
       ],
     },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TESTING — added Milestone 2 (May 2026)
+    // 365 automated tests: 267 Playwright outcomes + 98 pytest
+    // Run: 23 April 2026 · 264/267 Playwright passing · 98/98 pytest passing
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Testing',
+      items: [
+        'testing/dashboard-tests',
+        'testing/testing-overview',
+        'testing/pipeline-tests',
+      ],
+    },
+
     {
       type: 'category',
       label: 'Project',
@@ -48,9 +69,25 @@ const sidebars = {
         'milestones/overview',
         'milestones/milestone-1',
         'milestones/milestone-2',
-        'project/partners',
+        
       ],
     },
+    {
+      type: 'category',
+      label: 'walkthrough',
+      items: [
+        'walkthrough/walkthrough',
+      ],
+    }
+  ],
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // WALKTHROUGH sidebar — standalone tab, not nested under docsSidebar
+  // Add { type: 'docSidebar', sidebarId: 'walkthroughSidebar', label: 'Walkthrough' }
+  // to the navbar items array in docusaurus.config.js
+  // ─────────────────────────────────────────────────────────────────────────
+  walkthroughSidebar: [
+    'walkthrough/walkthrough',
   ],
 };
 
