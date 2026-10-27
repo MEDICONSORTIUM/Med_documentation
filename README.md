@@ -14,12 +14,12 @@
 
 [![Playwright Tests](https://img.shields.io/badge/playwright-264%2F267%20passing-4CAF50?style=flat-square&logo=playwright)](https://mediconsortium.github.io/Med_documentation/docs/testing/overview)
 [![pytest](https://img.shields.io/badge/pytest-98%2F98%20passing-4CAF50?style=flat-square&logo=pytest)](https://mediconsortium.github.io/Med_documentation/docs/testing/pipeline-tests)
-[![Milestone](https://img.shields.io/badge/milestone-M2%20active-1a82ff?style=flat-square)](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-2)
+[![Milestone](https://img.shields.io/badge/milestone-M3%20active-1a82ff?style=flat-square)](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-3)
 [![Docs](https://img.shields.io/badge/docs-live-0070f3?style=flat-square)](https://mediconsortium.github.io/Med_documentation/)
-[![Platform](https://img.shields.io/badge/platform-live-0070f3?style=flat-square)](https://main.d1jko0jkg4m7f.amplifyapp.com)
+[![Platform](https://img.shields.io/badge/platform-live-0070f3?style=flat-square)](https://www.eoha.co.za/)
 [![License](https://img.shields.io/badge/license-MIT-gray?style=flat-square)](./LICENSE)
 
-[Live Platform](https://main.d1jko0jkg4m7f.amplifyapp.com) · [Documentation](https://mediconsortium.github.io/Med_documentation/) · [Milestone 2](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-2) · [Report a Bug](https://github.com/mediconsortium/Med_documentation/issues)
+[Live Platform](https://www.eoha.co.za/) · [Documentation](https://mediconsortium.github.io/Med_documentation/) · [Milestone 3](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-3) · [Report a Bug](https://github.com/mediconsortium/Med_documentation/issues)
 
 </div>
 
@@ -48,7 +48,9 @@ This repository is the **documentation site** for the EOHA platform — a [Docus
 - A living walkthrough of the platform's current state
 - Milestone progress and partner information
 
-The **platform itself** lives at [main.d1jko0jkg4m7f.amplifyapp.com](https://main.d1jko0jkg4m7f.amplifyapp.com) and is deployed separately via AWS Amplify.
+The **platform itself** lives at [www.eoha.co.za](https://www.eoha.co.za/) and is deployed separately via AWS Amplify.
+
+> **Milestone 3 status:** Prototype validation and testing are active. Only environmental variables are currently collected; disease validation data has not been acquired. Current environmental scores are not validated disease predictions.
 
 ---
 
@@ -108,9 +110,9 @@ The 5th Wave Index — our framing for the non-communicable disease burden risin
 
 ---
 
-## Current status — Milestone 2
+## Milestone 2 status (historical)
 
-> **M2 is active.** March – August 2026.
+> M2 covered March – August 2026.
 
 | Deliverable | Status |
 |-------------|--------|

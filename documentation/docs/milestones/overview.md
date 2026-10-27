@@ -18,7 +18,7 @@ The MED Consortium project runs from **November 2025 to October 2026** with a to
 | M0 | Compliance & onboarding | Oct 2025 | — | ✅ Complete |
 | M1 | System design & data architecture | Nov 2025 – Mar 2026 | R 250,000 | ✅ Complete |
 | **M2** | **Prototype development (PoC)** | **Mar – Aug 2026** | **R 500,000** | 🔵 **Active** |
-| M3 | Prototype validation & testing | Aug – Nov 2026 | R 250,000 | ⏳ Upcoming |
+| **M3** | **Prototype validation & testing** | **Aug – Nov 2026** | **R 250,000** | 🔵 **Active** |
 
 ---
 

@@ -163,7 +163,7 @@ const config = {
             position: 'left'
           },
           {
-            href: 'https://main.d1jko0jkg4m7f.amplifyapp.com/',
+            href: 'https://www.eoha.co.za/',
             label: 'Live Platform',
             position: 'right',
           },
@@ -188,7 +188,7 @@ const config = {
             items: [
               { label: 'Malaria Risk Module', to: '/docs/modules/malaria' },
               { label: 'NCD Risk Module', to: '/docs/modules/ncd' },
-              { label: 'Live Dashboard', href: 'https://main.d1jko0jkg4m7f.amplifyapp.com/' },
+              { label: 'Live Dashboard', href: 'https://www.eoha.co.za/' },
             ],
           },
           {
@@ -228,8 +228,8 @@ const config = {
         additionalLanguages: ['python', 'bash', 'javascript', 'json', 'java'],
       },
       announcementBar: {
-        id: 'milestone_1_live',
-        content: '🛰️ <strong>Milestone 1</strong> is underway — System Design & Data Architecture (Nov 2025 – Mar 2026). <a href="/Med_documentation/docs/milestones/milestone-1">View progress →</a>',
+        id: 'milestone_3_live',
+        content: '🛰️ <strong>Milestone 3</strong> is active — Prototype Validation & Testing. <a href="/Med_documentation/docs/milestones/milestone-3">View progress →</a>',
         backgroundColor: '#0070f3',
         textColor: '#ffffff',
         isCloseable: true,

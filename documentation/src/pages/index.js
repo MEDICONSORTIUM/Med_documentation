@@ -58,8 +58,8 @@ const MILESTONES = [
     title: 'System Design & Data Architecture',
     date: 'Nov 2025 – Mar 2026',
     amount: 'R 250,000',
-    active: true,
-    done: false,
+    active: false,
+    done: true,
   },
   {
     num: 'Milestone 2',
@@ -67,14 +67,14 @@ const MILESTONES = [
     date: 'Mar – Aug 2026',
     amount: 'R 500,000',
     active: false,
-    done: false,
+    done: true,
   },
   {
     num: 'Milestone 3',
     title: 'Prototype Validation & Testing',
     date: 'Aug – Nov 2026',
     amount: 'R 250,000',
-    active: false,
+    active: true,
     done: false,
   },
 ];
@@ -94,7 +94,7 @@ export default function Home() {
         <div className="container">
           {/* Eyebrow */}
           <div className="badge--teal" style={{ marginBottom: '1.5rem' }}>
-            🛰️ Milestone 2 in progress — Mar 2026 to Aug 2026
+            🛰️ Milestone 3 active — Prototype Validation & Testing
           </div>
 
           <h1 className="hero__title">
@@ -106,12 +106,17 @@ export default function Home() {
             across Southern Africa using satellite imagery and epidemiological data.
           </p>
 
+          <p className="hero__subtitle" role="note">
+            Data status: only environmental variables are currently collected. Disease validation
+            data has not been acquired; current indicators are not validated disease predictions.
+          </p>
+
           <div className="hero-cta-group">
             <Link to="/docs/intro" className="btn-primary">
               Read the docs
             </Link>
             <a
-              href="https://main.d1jko0jkg4m7f.amplifyapp.com/"
+              href="https://www.eoha.co.za/"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-outline"
@@ -199,6 +204,9 @@ export default function Home() {
           </Link>
           <Link to="/docs/milestones/milestone-2" className="btn-primary" style={{ fontSize: '0.875rem', padding: '10px 20px' }}>
             View Milestone 2 details
+          </Link>
+          <Link to="/docs/milestones/milestone-3" className="btn-primary" style={{ fontSize: '0.875rem', padding: '10px 20px' }}>
+            View Milestone 3 details
           </Link>
           <Link to="/docs/architecture/system-architecture" className="btn-outline" style={{ fontSize: '0.875rem', padding: '9px 20px' }}>
             System architecture →

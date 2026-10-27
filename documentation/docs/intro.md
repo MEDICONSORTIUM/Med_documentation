@@ -10,7 +10,9 @@ slug: /intro
 **Using Earth Observation data to monitor water-borne pathogens and non-communicable disease risk factors across Southern Africa.**
 
 :::info Current status
-Milestone 1 (System Design & Data Architecture) is in progress: **1 November 2025 – 16 March 2026**.
+Milestone 3 (Prototype Validation & Testing) is active: **August – November 2026**. Milestones 1 and 2 are complete.
+
+> **Data status:** The prototype currently collects environmental variables only. Disease validation data has not been acquired, so its environmental indicators are not validated disease predictions.
 :::
 
 ## What is this platform?
@@ -46,7 +48,7 @@ See [System Architecture](/docs/architecture/system-architecture) and [EO Data P
 
 The platform is deployed on AWS Amplify:
 
-👉 **[https://main.d1jko0jkg4m7f.amplifyapp.com/](https://main.d1jko0jkg4m7f.amplifyapp.com/)**
+👉 **[https://www.eoha.co.za/](https://www.eoha.co.za/)**
 
 > Best experienced on desktop. Mobile (portrait) support is in active development.
 
@@ -69,3 +71,4 @@ The platform is deployed on AWS Amplify:
 - [Datasets →](/docs/data/datasets)
 - [Milestone 1 →](/docs/milestones/milestone-1)
 - [Milestone 2 ->](/docs/milestones/milestone-2.md)
+- [Milestone 3 ->](/docs/milestones/milestone-3)

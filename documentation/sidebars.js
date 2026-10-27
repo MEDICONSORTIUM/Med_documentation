@@ -69,6 +69,7 @@ const sidebars = {
         'milestones/overview',
         'milestones/milestone-1',
         'milestones/milestone-2',
+        'milestones/milestone-3',
         
       ],
     },
