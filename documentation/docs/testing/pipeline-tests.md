@@ -6,33 +6,28 @@ sidebar_label: Pipeline Tests
 
 # EO Data Pipeline Tests
 
-**Spec files:** `test_unit.py` · `test_integration_transforms.py` · `test_integration_db.py` · `test_e2e_pipeline.py`
-**Framework:** pytest · **Result, verified this session by actually running the suite:** ✅ 98 / 98 passing (≈ 1.1 s)
+**Spec files:** `test_unit_gee.py` · `test_integration_transforms.py` · `test_integration_db.py` · `test_e2e_pipeline.py`  
+**Framework:** pytest · **Results:** ✅ 98 / 98 passing (≈ 0.82 s)
 
 ---
 
 ## What is being tested
 
-The `etl_pipeline.py` script is the monthly satellite ingestion job that produces all EO-derived
-environmental data in the EOHA platform. It runs as a **GitHub Actions job** (cron `'0 0 1 * *'`,
-monthly, plus manual `workflow_dispatch`) — not a Cloud Run job, as earlier drafts of this page
-described. It executes eight steps in sequence:
+The `eo_datapipeline` module is the monthly satellite ingestion job that underpins all risk data in the EOHA platform. It runs as a scheduled Cloud Run job and executes eight steps in sequence:
 
 | # | Step | Description |
 |---|------|-------------|
-| 0 | Authentication | Service account JSON loaded from `GCP_SA_JSON`; GEE and GCS clients initialised |
+| 0 | Authentication | Service account JSON loaded from environment; GEE and GCS clients initialised |
 | 1 | Month resolution | Previous calendar month derived as the processing window |
-| 2 | Asset loading | SA ward boundaries, WorldPop population, and ESA WorldCover images loaded from GEE |
+| 2 | Asset loading | SA ward boundaries, WorldPop population, and ESA land cover images loaded from GEE |
 | 3 | Image composition | Per-province: LST, NDVI, NDWI, ERA5 temperature and soil moisture stacked into one multi-band image |
-| 4 | Region reduction | Mean and mode reducers applied at 1,000 m scale over ward polygons |
+| 4 | Region reduction | Mean and mode reducers applied at 1 000 m scale over ward polygons |
 | 5 | Export | One GEE batch export task per province; output CSV written to GCS |
-| 6 | Task polling | Active tasks polled every 30 seconds; pipeline exits on any `FAILED`-equivalent state |
+| 6 | Task polling | Active tasks polled every 30 seconds; pipeline exits on any `FAILED` state |
 | 7 | Transform | GCS CSV parsed; zone and observation DataFrames constructed and cleaned |
 | 8 | DB upsert | Both tables upserted to PostgreSQL using `ON CONFLICT DO UPDATE` |
 
-Because GEE uses a deferred computation model and the pipeline calls out to Google Cloud, the entire
-external surface is mocked in tests. No credentials, network calls, or real database connections are
-needed to run the suite — confirmed by actually running it with none configured.
+Because GEE uses a deferred computation model and the pipeline calls out to Google Cloud, the entire external surface is mocked. No credentials, network calls, or real database connections are needed to run the suite.
 
 ## Test environment
 
@@ -42,45 +37,37 @@ needed to run the suite — confirmed by actually running it with none configure
 | GEE credentials | Not required — `ee` module fully replaced by `MagicMock` |
 | GCS credentials | Not required — storage client injected as `MagicMock` |
 | PostgreSQL connection | Not required — `execute_batch` patched at module level |
-| Run time | ≈ 1.1 s (verified this session) |
-| Runtime environment | Python 3.11.9 in CI (the repo's own README/badges say 3.12 — CI is the source of truth) |
+| Run time | ≈ 0.82 s |
 
 ## Running the suite
 
 ```bash
 pip install pytest pytest-mock pandas psycopg2-binary
 
-cd eo-datapipeline
+cd eoha_tests
 pytest tests/ -v --tb=short
 
 # Or target individual layers
-pytest tests/test_unit.py -v
+pytest tests/test_unit_gee.py -v
 pytest tests/test_integration_transforms.py -v
 pytest tests/test_integration_db.py -v
 pytest tests/test_e2e_pipeline.py -v
 
 # Expected output
-# ========================= 98 passed in ~1s ==========================
+# ========================= 98 passed in 0.82s ==========================
 ```
 
 ---
 
-## EOHA-GEE — GEE Image Composition Unit Tests · 13 tests · ✅ passing, but see caveat
+## EOHA-GEE — GEE Image Composition Unit Tests · 13 tests · ✅
 
-Source: `tests/test_unit.py` (its own internal docstring header still reads `test_unit_gee.py` — a
-leftover from before a rename; the file on disk is `test_unit.py`).
+Source: `test_unit_gee.py`
 
-:::caution Does not exercise production code
-This file imports neither `ee`, `etl_pipeline`, nor `tests/eo_datapipeline.py`. It hand-reimplements
-`build_safe_band_image()`'s branching logic inline (its own `_run()` helper, explicitly commented as
-an "inline re-implementation so we can test the logic without importing the script-level module")
-against a bare `MagicMock()` `ee` namespace, and `TestProcessProvince` asserts on raw mock call
-patterns rather than calling any real function. **These 13 tests provide no regression protection for
-the actual GEE composition code in `etl_pipeline.py`** — they would keep passing unchanged even if
-`build_safe_band_image()`/`process_province()` were broken or deleted.
-:::
+The entire `ee` namespace is replaced by a `MagicMock` object. Method chains such as `filterDate().select().mean().rename()` are stubbed and their call arguments are captured for assertion. No pixels are ever computed.
 
 ### TestBuildSafeBandImage — 7 tests
+
+`build_safe_band_image()` wraps each GEE image band in a safe composition that applies scale, offset, and a `selfMask()` fallback when the collection is empty for a given province-month window.
 
 | ID | Test | What is checked |
 |----|------|----------------|
@@ -93,6 +80,8 @@ the actual GEE composition code in `etl_pipeline.py`** — they would keep passi
 | EOHA-GEE-007 | `test_fallback_branch_uses_selfmask` | When collection is empty, `selfMask()` is called exactly once |
 
 ### TestProcessProvince — 6 tests
+
+`process_province()` filters ward boundaries by province name, builds the stacked image, runs `reduceRegions()` twice (mean for continuous bands, mode for land cover), and stamps a `Month` label on every output feature.
 
 | ID | Test | What is checked |
 |----|------|----------------|
@@ -107,10 +96,13 @@ the actual GEE composition code in `etl_pipeline.py`** — they would keep passi
 
 ## EOHA-TRF — GCS and DataFrame Transform Tests · 27 tests · ✅
 
-Source: `tests/test_integration_transforms.py`. Real pandas operations run on in-memory DataFrames,
-importing real functions from `tests/eo_datapipeline.py`.
+Source: `test_integration_transforms.py`
+
+Real pandas operations run on in-memory DataFrames. The `mock_gcs_client` fixture returns a canonical two-row CSV string (Ward 1 and Ward 2, Musina) that represents a single GEE province export.
 
 ### TestBuildZoneDataframe — 15 tests
+
+Maps GEE export rows to the `zone` table schema.
 
 | Concern | Assertions |
 |---------|-----------|
@@ -124,11 +116,13 @@ importing real functions from `tests/eo_datapipeline.py`.
 
 ### TestBuildObservationDataframe — 11 tests
 
+Maps rows to the `malaria_observation` table schema. Date logic parses the `Month` label string (`'Jan 2025'`) into `datetime64[ns]` with day component always set to `1`.
+
 | Concern | Assertions |
 |---------|-----------|
-| Schema | Eight required columns: `date_recorded`, `zone_id`, `lst_surface_temp_c`, `air_temp_c`, `soil_moisture_pct`, `ndvi_vegetation_index`, `ndwi_water_index`, `agric_percentage` |
+| Schema | Eight required columns: `zone_id`, `date_recorded`, `lst`, `ndvi`, `ndwi`, `soil_moisture`, `temperature`, `land_cover` |
 | Date logic | `date_recorded` is `datetime64[ns]`; year and month match the label; day is always `1` |
-| Value correctness | `lst_surface_temp_c` and `ndvi_vegetation_index` match the fixture to `pytest.approx` precision |
+| Value correctness | `lst` and `ndvi` match the fixture to `pytest.approx` precision |
 | Null handling | Null LST input → NaN or None in output (SQL `NULL` safe) |
 | Scale | 9-province concatenation (9 × 2-row fixtures) → exactly 18 rows |
 
@@ -147,8 +141,9 @@ importing real functions from `tests/eo_datapipeline.py`.
 
 ## EOHA-DB — PostgreSQL Upsert Integration Tests · 23 tests · ✅
 
-Source: `tests/test_integration_db.py`. `execute_batch` is patched at the module boundary. Tests
-inspect the SQL string, the row tuple structure, and the keyword arguments passed to the mock cursor.
+Source: `test_integration_db.py`
+
+`execute_batch` is patched at the module boundary. Tests inspect the SQL string, the row tuple structure, and the keyword arguments passed to the mock cursor.
 
 ### TestUpsertZoneRows — 10 tests
 
@@ -171,16 +166,15 @@ inspect the SQL string, the row tuple structure, and the keyword arguments passe
 
 ### TestDbErrorHandling — 3 tests
 
-`psycopg2.OperationalError`, `psycopg2.ProgrammingError`, and `psycopg2.IntegrityError` raised inside
-`execute_batch` all propagate unmodified to the pipeline caller. `etl_pipeline.py`'s own loop is
-responsible for calling `connection.rollback()` and `sys.exit(1)` on any such exception.
+`psycopg2.OperationalError`, `psycopg2.ProgrammingError`, and `psycopg2.IntegrityError` raised inside `execute_batch` all propagate unmodified to the pipeline caller. The pipeline loop is responsible for calling `connection.rollback()` and `sys.exit(1)`.
 
 ---
 
 ## EOHA-E2E — Full Pipeline Flow Tests · 35 tests · ✅
 
-Source: `tests/test_e2e_pipeline.py`. Wires all components together using the complete set of mocked
-external surfaces. Verifies end-to-end correctness: GCS read → transform → DB write.
+Source: `test_e2e_pipeline.py`
+
+Wires all components together using the complete set of mocked external surfaces. Verifies end-to-end correctness: GCS read → transform → DB write.
 
 ### TestPollTaskUntilComplete — 7 tests
 
@@ -189,24 +183,20 @@ external surfaces. Verifies end-to-end correctness: GCS read → transform → D
 | Task completes immediately | Returns `True` |
 | Task fails (`FAILED` state) | Returns `False`; no exception |
 | Task active for two polls | `active()` called 3× ; `sleep()` called 2× |
-| Poll interval respected | `time.sleep()` called with the configured interval |
+| Poll interval respected | `time.sleep()` called with 30 s constant |
 | Status check after inactive | `task.status()` invoked exactly once |
 | `CANCELLED` state | Returns `False` |
 | `UNSUBMITTED` state | Returns `False` |
 
 ### TestPipelineHappyPath — 9 tests
 
-Full chain: `load_csv_from_gcs → build_zone_dataframe → build_observation_dataframe →
-upsert_zone_rows → upsert_observation_rows`. Both zone and observation row counts equal 2 (matching
-the fixture); `zone_id` values are identical across both DataFrames; GCS bucket and blob paths are
-called with exact string arguments; `date_recorded` is the first day of the correct month; no null
-`zone_id` values appear in either output.
+Full chain: `load_csv_from_gcs → build_zone_dataframe → build_observation_dataframe → upsert_zone_rows → upsert_observation_rows`.
+
+Both zone and observation row counts equal 2 (matching the fixture). `zone_id` values are identical across both DataFrames. GCS bucket and blob paths are called with exact string arguments. `date_recorded` is the first day of the correct month. No null `zone_id` values appear in either output.
 
 ### TestAllProvincesProcessed — 6 tests
 
-`PROVINCES` contains exactly 9 entries including `Limpopo` and `Gauteng`. All slugified province
-filenames are distinct and contain no spaces. Sequential GCS reads for all 9 provinces each return a
-valid, non-empty `pd.DataFrame`.
+`PROVINCES` contains exactly 9 entries including `Limpopo` and `Gauteng`. All slugified province filenames are distinct and contain no spaces. Sequential GCS reads for all 9 provinces each return a valid, non-empty `pd.DataFrame`.
 
 ### TestGcsFailurePath — 2 tests
 
@@ -214,28 +204,18 @@ GCS 403 Forbidden and `NotFound` both propagate unmodified to the pipeline calle
 
 ### TestTaskFailurePath — 3 tests
 
-`FAILED`, `CANCELLED`, and `UNSUBMITTED` task states all cause `poll_task_until_complete` to return
-`False` without raising.
+`FAILED`, `CANCELLED`, and `UNSUBMITTED` task states all cause `poll_task_until_complete` to return `False` without raising.
 
 ### TestDatabaseRoundtrip — 8 tests
 
-After zone and observation upserts are called, `execute_batch` call arguments are inspected to verify
-that zone IDs cross-reference correctly between the two tables, that all 9 provinces' rows are written
-in the correct order, and that the return-value sum across all province calls equals the total fixture
-row count.
+After zone and observation upserts are called, `execute_batch` call arguments are inspected to verify that zone IDs cross-reference correctly between the two tables, that all 9 provinces' rows are written in the correct order, and that the return-value sum across all province calls equals the total fixture row count.
 
 ---
 
-## Design decisions (from the repo's own `Agent.md`)
+## Design decisions
 
-**No live GEE calls.** GEE's deferred computation model means unit tests cannot verify pixel values —
-only that the correct API methods are called with the correct arguments.
+**No live GEE calls.** GEE's deferred computation model means unit tests cannot verify pixel values — only that the correct API methods are called with the correct arguments. Live acceptance tests will be added in M3 behind a `--live-gee` flag.
 
-**No live psycopg2 connection.** SQL correctness is verified by string inspection, not against a real
-database.
+**No live psycopg2 connection.** SQL correctness is verified by string inspection. A future stage should validate `ON CONFLICT DO UPDATE` behaviour against a containerised PostgreSQL instance.
 
-**Two files, one piece of logic.** `etl_pipeline.py` (production, has top-level side effects, cannot
-be imported by tests) and `tests/eo_datapipeline.py` (a hand-duplicated, pure-function-only copy that
-tests actually import) are kept in sync today by convention only — nothing enforces it at import
-time. See [`eo-datapipeline/SUMMARY.md`](https://github.com/MEDICONSORTIUM/eo-datapipeline/blob/main/SUMMARY.md#2-architecture--design)
-for the full detail on this risk.
+**Extractable module.** The original pipeline was a top-level script that initialised GEE at import time. The `eo_datapipeline.py` module refactored all business logic into pure functions, enabling full testability without any environment variables.

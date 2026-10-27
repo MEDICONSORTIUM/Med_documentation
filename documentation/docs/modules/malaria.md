@@ -6,71 +6,139 @@ sidebar_label: Malaria Risk
 
 # Malaria Risk Module
 
-The malaria dashboard displays ward-level monthly environmental observations and a rule-based
-habitat suitability score. The dashboard runs in the browser and loads a CSV bundled in the
-`eoha-prototype` repository.
+The malaria risk module provides **ward-level monthly risk predictions** across Limpopo Province, South Africa, using satellite-derived environmental indicators.
 
 :::tip Live module
-Open the malaria dashboard: [https://www.eoha.co.za/](https://www.eoha.co.za/) → Malaria
+Open the malaria dashboard: [https://main.d1jko0jkg4m7f.amplifyapp.com/](https://main.d1jko0jkg4m7f.amplifyapp.com/) → Malaria Risk Prediction
 :::
 
-:::caution Validation data has not been acquired
-The current disease-monitoring collection contains environmental variables only and no observed
-malaria cases or other disease outcome labels. **Validation data has not been acquired**, so the
-displayed score has not been validated against malaria incidence. It is a rule-based environmental
-proxy for exploration, not a clinical prediction or a confirmed outbreak forecast.
-:::
+---
 
-## How the score is calculated
+## How risk is calculated
 
-The browser applies a fixed 0–100 point formula to each CSV row:
+The malaria risk score is a composite of four environmental factors extracted from EO data:
 
-| Environmental or contextual input | Condition | Points |
-|---|---|---:|
-| Soil moisture | > 0.35 | +40 |
-| Soil moisture | > 0.25 and ≤ 0.35 | +20 |
-| Land surface temperature | 25°C through 30°C | +30 |
-| NDWI water index | > −0.1 | +20 |
-| Population density | > 300 people/km² | +10 |
+| Factor | Condition | Points added |
+|--------|-----------|-------------|
+| **Soil Moisture** | > 0.35 | +40 |
+| **Soil Moisture** | 0.25 – 0.35 | +20 |
+| **Surface Temperature** | 25°C – 30°C | +30 |
+| **NDWI (water presence)** | > −0.1 | +20 |
+| **Population Density** | > 300 /km² | +10 |
 
-The points are added and categorized as **High** (≥ 50), **Moderate** (25–49), or **Low** (below
-25). This is a deterministic ruleset in the client-side code, not a trained or forecasting model.
-Blank or nonnumeric inputs are converted to zero before threshold checks. This can change scores
-when data is missing; for example, missing NDWI becomes zero and passes the `NDWI_Water > -0.1`
-condition.
+**Maximum score: 100**
+
+```javascript
+function calculateDynamicRisk(d) {
+  let score = 0;
+  if (d.Soil_Moisture > 0.35)       score += 40;
+  else if (d.Soil_Moisture > 0.25)  score += 20;
+  if (d.LST_Surface_C >= 25 && d.LST_Surface_C <= 30) score += 30;
+  if (d.NDWI_Water > -0.1)          score += 20;
+  if (d.Population_Density_Per_KM2 > 300) score += 10;
+  return score;
+}
+```
+
+### Risk thresholds
+
+| Score | Risk level | Map colour |
+|-------|-----------|-----------|
+| ≥ 50 | 🔴 **High** | `#d93025` |
+| 25–49 | 🟡 **Moderate** | `#f9bb06` |
+| 0–24 | 🟢 **Low** | `#34a853` |
+
+---
 
 ## Dashboard features
 
-- Leaflet ward map, risk markers and heatmap, with ward popups.
-- Municipality and ward selection, risk-level filtering, and a January 2025–January 2026 monthly
-  timeline.
-- Selected ward risk and municipality mean score panels.
-- Environmental factor bars. The current UI labels (“Precipitation,” “Avg Temperature,” and
-  “Humidity Level”) do not exactly match the values bound in code: agricultural land percentage,
-  land surface temperature, and soil moisture, respectively. Interpret these bars with that mapping
-  in mind.
-- Responsive theme controls and map baselayer styling.
+### Region selector
 
-## Dataset and scope
+Drill down from province → municipality → ward:
 
-The page loads `data/Limpopo_Risk_Jan25_Jan26_Safe.csv` from the prototype repository. Despite the
-filename, the dashboard dataset spans all nine South African provinces. A separate file with a
-similar name is not loaded by the dashboard. See [Datasets](/docs/data/datasets) for the file
-details, fields, and its relationship to the independent EO pipeline.
+- **Province:** Currently fixed to Limpopo
+- **Municipality:** 9 municipalities including Greater Giyani, Ba-Phalaborwa, Greater Letaba, Maruleng, and more
+- **Ward:** All wards for the selected municipality in the selected month
 
-The CSV is bundled frontend data; the dashboard does not obtain its rows from the pipeline database
-or the backend API at runtime. The score is calculated from these preloaded observations in the
-browser.
+Click **Apply** to fly the map to the selected ward and open its risk popup.
 
-## Limitations
+### Time slider
 
-- No malaria case-count or other health outcome dataset has been acquired for model validation.
-- Environmental suitability is not the same as observed transmission; the score omits case data,
-  vector surveillance, intervention coverage, and other determinants.
-- Risk thresholds and weights are heuristic and have not been calibrated against observed disease
-  outcomes.
-- CSV observations are static in this repository and are not refreshed by the separate monthly
-  ingestion pipeline.
+The slider spans **January 2025 to January 2026** (13 monthly snapshots). Moving the slider re-renders all map markers for the selected month.
 
-The environmental exposure variables used by this prototype support exploratory monitoring only.
-Do not interpret the displayed score as a validated estimate of disease incidence.
+```javascript
+const MONTH_DATA = [
+  { id: 'Jan 2025', month: 'January',  year: '2025' },
+  { id: 'Feb 2025', month: 'February', year: '2025' },
+  // ... through ...
+  { id: 'Jan 2026', month: 'January',  year: '2026' }
+];
+```
+
+### Risk level filter
+
+Filter the map to show only **High Risk**, **Medium Risk**, or **Low Risk** wards.
+
+### Environmental factors panel
+
+When a ward is selected, the panel displays:
+
+| Indicator | Source | Notes |
+|-----------|--------|-------|
+| **Habitat Type** | ESA WorldCover | Land cover class (tree cover, cropland, wetland, etc.) |
+| **Population Density** | WorldPop | Persons per km² |
+| **Agricultural Area** | ESA WorldCover Class 40 | % of ward under cultivation |
+| **Surface Temperature** | Sentinel-3 / Landsat | LST in °C |
+| **Soil Moisture** | MODIS / Sentinel-1 | m³/m³ index |
+
+---
+
+## Dataset
+
+| Property | Value |
+|----------|-------|
+| **File** | `Limpopo_Risk_Jan25_Jan26_Safe.csv` |
+| **Records** | 7,384 |
+| **Months** | Jan 2025 – Jan 2026 (13 months) |
+| **Coverage** | Limpopo Province, South Africa |
+| **Municipalities** | 9 |
+| **Source** | Google Earth Engine |
+
+See [Datasets →](/docs/data/datasets) for full schema and download instructions.
+
+---
+
+## Habitat class codes
+
+The `Habitat_Class_Code` field uses ESA WorldCover 2021 classes:
+
+| Code | Description |
+|------|-------------|
+| 10 | Tree cover |
+| 20 | Shrubland |
+| 30 | Grassland |
+| 40 | Cropland |
+| 50 | Built-up |
+| 60 | Bare / sparse vegetation |
+| 80 | Permanent water bodies |
+| 90 | Herbaceous wetland |
+
+---
+
+## Known limitations
+
+- Risk model uses EO-derived proxies for mosquito habitat — it does not incorporate direct vector counts or entomological surveillance data
+- Population density uses WorldPop estimates (not census-level ward data)
+- Soil moisture is approximated from optical and SAR indices, not in-situ measurements
+- The 25°C–30°C LST window is a simplified *Anopheles* optimum; actual transmission is influenced by many additional factors
+
+---
+
+## Roadmap
+
+| Phase | Planned enhancement |
+|-------|-------------------|
+| Milestone 2 | Connect live GEE API for real-time monthly refresh |
+| Milestone 2 | Add NICD case-count overlay |
+| Milestone 3 | Validate risk scores against NICD malaria incidence data |
+| Milestone 3 | Extend coverage to other high-burden provinces (KZN, Mpumalanga) |

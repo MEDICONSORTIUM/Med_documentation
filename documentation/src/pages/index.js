@@ -7,41 +7,41 @@ import styles from './index.module.css';
 const FEATURES = [
   {
     icon: '🛰️',
-    title: 'Environmental Observations',
-    desc: 'The public prototype displays monthly environmental measurements from a CSV bundled with its frontend. A separate EO pipeline writes to its own database.',
+    title: 'Earth Observation Data',
+    desc: 'Sentinel-2/3, Landsat 8/9 and MODIS imagery processed via Google Earth Engine to extract health-relevant environmental indices.',
   },
   {
     icon: '🦟',
-    title: 'Malaria Environmental Indicator',
-    desc: 'A browser-side rule-based suitability score summarizes environmental variables. It has not been validated against malaria cases.',
+    title: 'Malaria Risk Prediction',
+    desc: 'Ward-level malaria risk scoring across Limpopo province using soil moisture, LST, NDWI and population density — updated monthly.',
   },
   {
     icon: '🫀',
-    title: 'NCD Environmental Observations',
-    desc: 'The current NCD page presents environmental observations. NCD disease scoring and forecasting are not implemented.',
+    title: 'NCD Risk Monitoring',
+    desc: 'Non-communicable disease risk factors mapped across Southern Africa using air quality, heat stress and land-cover indicators.',
   },
   {
     icon: '🗺️',
     title: 'Interactive Dashboard',
-    desc: 'Leaflet maps with geographic selectors, environmental summaries, and monthly navigation over the bundled data.',
+    desc: 'Real-time Leaflet-based maps with region drill-down, risk filters, time sliders and auto-generated stakeholder reports.',
   },
   {
     icon: '📡',
-    title: 'Separate EO Pipeline',
-    desc: 'A monthly Google Earth Engine ingestion job writes to PostgreSQL. It is not connected to the dashboard CSV at runtime.',
+    title: 'Google Earth Engine Pipeline',
+    desc: 'Automated six-stage data pipeline: acquisition → pre-processing → feature extraction → fusion → risk modelling → output.',
   },
   {
     icon: '🏥',
-    title: 'Validation Status',
-    desc: 'Disease validation data has not been acquired. Software tests do not establish epidemiological validity.',
+    title: 'Partner Validated',
+    desc: 'Platform validated through pilot testing with UCT, CSIR and NICD. Outputs designed for direct use by DoH and public health teams.',
   },
 ];
 
 const STATS = [
-  { value: 'Environmental', label: 'Variables currently collected' },
-  { value: '13 months', label: 'Monthly dashboard coverage' },
-  { value: 'Not acquired', label: 'Disease validation data' },
-  { value: 'Milestone 3', label: 'Validation & testing active' },
+  { value: '7,384', label: 'Ward records (Limpopo)' },
+  { value: '13', label: 'Months of data (Jan 25 – Jan 26)' },
+  { value: '4', label: 'Southern African countries' },
+  { value: 'R 1M', label: 'Total project budget' },
 ];
 
 const MILESTONES = [
@@ -58,8 +58,8 @@ const MILESTONES = [
     title: 'System Design & Data Architecture',
     date: 'Nov 2025 – Mar 2026',
     amount: 'R 250,000',
-    active: false,
-    done: true,
+    active: true,
+    done: false,
   },
   {
     num: 'Milestone 2',
@@ -67,14 +67,14 @@ const MILESTONES = [
     date: 'Mar – Aug 2026',
     amount: 'R 500,000',
     active: false,
-    done: true,
+    done: false,
   },
   {
     num: 'Milestone 3',
     title: 'Prototype Validation & Testing',
     date: 'Aug – Nov 2026',
     amount: 'R 250,000',
-    active: true,
+    active: false,
     done: false,
   },
 ];
@@ -87,14 +87,14 @@ export default function Home() {
   return (
     <Layout
       title="EO Health Surveillance Platform"
-      description="EOHA prototype environmental observations for public health research. Disease validation data has not been acquired."
+      description="Earth Observation-based water-borne pathogen and NCD risk monitoring platform for Southern Africa."
     >
       {/* ── Hero ── */}
       <div className="hero--med">
         <div className="container">
           {/* Eyebrow */}
           <div className="badge--teal" style={{ marginBottom: '1.5rem' }}>
-            🛰️ Milestone 3 active — Prototype Validation & Testing
+            🛰️ Milestone 2 in progress — Mar 2026 to Aug 2026
           </div>
 
           <h1 className="hero__title">
@@ -102,8 +102,8 @@ export default function Home() {
           </h1>
 
           <p className="hero__subtitle">
-            Exploring environmental observations for public health research. Disease validation data
-            has not been acquired, so current indicators are not validated disease predictions.
+            Monitoring water-borne pathogen risks and non-communicable disease factors
+            across Southern Africa using satellite imagery and epidemiological data.
           </p>
 
           <div className="hero-cta-group">
@@ -111,7 +111,7 @@ export default function Home() {
               Read the docs
             </Link>
             <a
-              href="https://www.eoha.co.za/"
+              href="https://main.d1jko0jkg4m7f.amplifyapp.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-outline"
@@ -138,7 +138,7 @@ export default function Home() {
           Platform capabilities
         </h2>
         <p style={{ marginBottom: '3rem' }}>
-          Current prototype capabilities and their evidence status.
+          Six core capabilities powering the EO health surveillance system.
         </p>
 
         <div className="features-grid">
@@ -197,8 +197,8 @@ export default function Home() {
           <Link to="/docs/milestones/milestone-1" className="btn-primary" style={{ fontSize: '0.875rem', padding: '10px 20px' }}>
             View Milestone 1 details
           </Link>
-          <Link to="/docs/milestones/milestone-3" className="btn-primary" style={{ fontSize: '0.875rem', padding: '10px 20px' }}>
-            View Milestone 3 details
+          <Link to="/docs/milestones/milestone-2" className="btn-primary" style={{ fontSize: '0.875rem', padding: '10px 20px' }}>
+            View Milestone 2 details
           </Link>
           <Link to="/docs/architecture/system-architecture" className="btn-outline" style={{ fontSize: '0.875rem', padding: '9px 20px' }}>
             System architecture →

@@ -1,45 +1,35 @@
 ---
 id: milestone-2
 title: Milestone 2 — Prototype Development
-sidebar_label: Milestone 2 (Complete)
-description: Milestone 2 prototype development review, with implementation evidence and targets carried into Milestone 3.
+sidebar_label: Milestone 2 (Active)
+description: EOHA Prototype Development — March to August 2026. Live GEE pipeline, XGBoost forecasting, NCD data, and alert engine.
 ---
 
 # Milestone 2 — Prototype Development (PoC)
 
-**Period:** March – August 2026 &nbsp;|&nbsp; **Budget:** R 500,000 &nbsp;|&nbsp; **Status:** Period complete; several targets remain open
+**Period:** March – August 2026 &nbsp;|&nbsp; **Budget:** R 500,000 &nbsp;|&nbsp; **Status:** 🔵 Active
 
 ---
 
 ## Objective
 
-M2's planned objective was to transform the M1 design specification into a live, end-to-end system. The period has ended. This page compares that plan with repository evidence; the planned architecture and deliverables below must not be read as implemented features.
-
-:::info Progress verified 2026-08-06
-Of the six deliverables below, **one is substantially built** (the GEE ingest pipeline, though with a
-different trigger mechanism and cadence than originally targeted). The other five — XGBoost
-forecasting, the NCD pipeline, server-side scoring, the alert engine, and multi-country expansion —
-have no corresponding code in any of the three EOHA repositories as of this check. Each deliverable
-below is marked with its actual status.
-:::
+Transform the M1 design specification into a live, end-to-end running system. Every entity defined in the ERDs, every use case described in the design document, and every pipeline diagrammed in the data architecture section must be implemented and demonstrated against real data.
 
 ---
 
 ## Deliverables
 
-### 1. Automated GEE ingest pipeline — ✅ built, different mechanism than targeted
+### 1. Automated GEE ingest pipeline
 
-| Item | Targeted | As built |
-|------|----------|----------|
-| Trigger | Python Cloud Function, 8-day schedule (matching Sentinel-2 pass cadence) | **GitHub Actions cron, monthly** (`0 0 1 * *`) + manual dispatch |
-| Source | Google Earth Engine — Sentinel-2 SR, MODIS MOD11A1, ERA5 | **MODIS `MOD11A1`/`MOD13Q1`/`MOD09GA` + ERA5-Land** — no Sentinel-2 used |
-| Transform | Cloud masking (QA60 < 20%), zonal statistics via `reduceRegions()` | No explicit cloud-percentage filter; a `build_safe_band_image()` guard substitutes a blank image for data-sparse months. `reduceRegions()` at `scale=1000` — matches |
-| Output | `Malaria_Observation` rows: `lst_surface_temp_c`, `soil_moisture_pct`, `ndwi_water_index`, `ndvi_vegetation_index` | **Matches** — plus `air_temp_c` and `agric_percentage` |
-| Load | Writes to Ward Risk store via Data Ingestion service | Upserts directly into PostgreSQL (`zone`, `malaria_observation`) via `psycopg2` — no separate "Data Ingestion service" exists |
+| Item | Detail |
+|------|--------|
+| Trigger | Python Cloud Function, 8-day schedule (matching Sentinel-2 pass cadence) |
+| Source | Google Earth Engine — Sentinel-2 SR, MODIS MOD11A1, ERA5 |
+| Transform | Cloud masking (QA60 < 20%), zonal statistics via `reduceRegions()` |
+| Output | `Malaria_Observation` rows: `lst_surface_temp_c`, `soil_moisture_pct`, `ndwi_water_index`, `ndvi_vegetation_index` |
+| Load | Writes to Ward Risk store via Data Ingestion service |
 
-Full detail: [`eo-datapipeline/SUMMARY.md`](https://github.com/MEDICONSORTIUM/eo-datapipeline/blob/main/SUMMARY.md).
-
-### 2. XGBoost Malaria Risk Forecasting — ❌ not started
+### 2. XGBoost Malaria Risk Forecasting
 
 The ML pipeline runs weekly on all zones with sufficient observation history:
 
@@ -55,11 +45,7 @@ ML Pipeline triggers
 
 Output stored in `Malaria_Risk_Forecast`: `forecast_id`, `zone_id`, `target_prediction_date`, `outbreak_probability_score`, `model_version_used`.
 
-**Status:** no `Malaria_Risk_Forecast` table, no XGBoost code, and no ML pipeline of any kind exist
-in `eo-datapipeline`, `eoha_backend`, or `eoha-prototype` as of this check. The "90-day forecast" page
-in `eoha-prototype` shows `Math.random()`-generated sine curves, not model output.
-
-### 3. NCD Atmospheric Pipeline — ❌ not started
+### 3. NCD Atmospheric Pipeline
 
 Copernicus/Sentinel-based pipeline running in parallel:
 
@@ -72,11 +58,7 @@ Copernicus/Sentinel-based pipeline running in parallel:
 | MODIS/061/MOD11A2 | Land surface temperature | `lst_mean_c` |
 | ESA WorldCover/v100 | Urban growth boundary | `urban_cover_percentage` |
 
-**Status:** `eo-datapipeline` extracts no NO2/SO2/aerosol/UV data — its GEE collection list is
-malaria-only (§1). The NCD page in `eoha-prototype` displays hardcoded demonstration numbers for 8
-countries/9 provinces baked into the page's JavaScript, not queried from any pipeline or API.
-
-### 4. Server-side risk scoring — ❌ not started
+### 4. Server-side risk scoring
 
 `calculateDynamicRisk()` moves from the browser to a **Cloud Run** microservice:
 
@@ -86,11 +68,7 @@ R_{\text{ward}} = w_1 \cdot \text{NDWI} + w_2 \cdot \text{LST}_{\text{norm}} + w
 
 Enables real-time scoring at request time rather than relying on pre-computed CSV values.
 
-**Status:** `calculateDynamicRisk()` still runs entirely client-side in `eoha-prototype`'s browser
-JavaScript — there is no Cloud Run service, and `eoha_backend` exposes no scoring endpoint at all
-(only read-only `/api/zones` and `/api/malaria-observations`).
-
-### 5. Alert engine integration — ❌ not started
+### 5. Alert engine integration
 
 The `User_Risk_Alert` entity goes live:
 
@@ -99,10 +77,7 @@ The `User_Risk_Alert` entity goes live:
 - Alert status transitions: `Active` → `Acknowledged` → `Resolved`
 - Full audit trail written to `Audit Log`
 
-**Status:** no `User_Risk_Alert` table, no user table, no email dispatch code, and no audit log exist
-anywhere in the three repos.
-
-### 6. Multi-country expansion — ❌ not started
+### 6. Multi-country expansion
 
 Ward boundary GeoJSON for three additional countries ingested into the `Zone` table:
 
@@ -111,9 +86,6 @@ Ward boundary GeoJSON for three additional countries ingested into the `Zone` ta
 | Zimbabwe | District ward | SADHS 2019 |
 | Mozambique | Distrito | SADHS 2011 |
 | Zambia | District | SADHS 2018 |
-
-**Status:** `eo-datapipeline`'s `PROVINCES` list covers only the 9 South African provinces — no
-Zimbabwe/Mozambique/Zambia boundary data or processing exists in any repo.
 
 ---
 

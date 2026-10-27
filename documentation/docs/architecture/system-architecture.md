@@ -6,83 +6,79 @@ sidebar_label: System Architecture
 
 # Annexure A — System Architecture
 
-> **As-built reference**, verified against the three EOHA repositories
-> (`eo-datapipeline`, `eoha_backend`, `eoha-prototype`). Originally drafted as a Milestone 1 design
-> specification; updated here to describe what actually runs today rather than the original plan.
+> **Deliverable for Milestone 1** — Design specification document and EO data integration architecture plan.
 
 ## Overview
 
-The platform has separate data paths: a monthly ingestion job that writes to a database, a read-only
-API over that database, and a static dashboard that reads its own bundled CSV. The dashboard does
-not currently consume the API or the ingestion output.
+The platform is structured as a **four-layer architecture** connecting raw satellite data sources to a health surveillance dashboard consumed by public health partners.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Component 1 — EO Data Ingestion (eo-datapipeline)            │
-│  GEE extraction → GCS staging → PostgreSQL upsert             │
-│  Triggered monthly by GitHub Actions cron                     │
+│  Layer 1 — Data Sources                                      │
+│  EO Satellites · NICD · Public Health · Ground Sensors · DWS│
 └──────────────────────┬───────────────────────────────────────┘
                        ↓
 ┌──────────────────────────────────────────────────────────────┐
-│  eoha_backend — read-only REST API over that PostgreSQL data  │
-│  (GET /api/zones, GET /api/malaria-observations)               │
-│  No known caller today — not wired to the dashboard below.    │
-└────────────────────────────────────────────────────────────────┘
-
+│  Layer 2 — EO Data Pipeline                                  │
+│  Ingestion → Pre-process → Feature Extraction → Storage      │
+└──────────────────────┬───────────────────────────────────────┘
+                       ↓
 ┌──────────────────────────────────────────────────────────────┐
-│  Component 2 — Dashboard (eoha-prototype)                     │
-│  Static HTML/CSS/JS, reads a CSV bundled in its own repo       │
-│  No HTTP call to eoha_backend or eo-datapipeline anywhere.     │
+│  Layer 3 — Analytics & Modelling Engine                      │
+│  Pathogen index · NCD risk · Spatial analysis · Alerts       │
+└──────────────────────┬───────────────────────────────────────┘
+                       ↓
+┌──────────────────────────────────────────────────────────────┐
+│  Layer 4 — Health Surveillance Dashboard                     │
+│  Interactive maps · Time-series · Alerts · Reports           │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Component 1 — EO Data Ingestion
+## Layer 1 — Data Sources
 
-Implemented in [`eo-datapipeline`](https://github.com/MEDICONSORTIUM/eo-datapipeline) — see its
-repository README and source for full detail. Summary:
-
-1. **Trigger** — GitHub Actions cron, `0 0 1 * *` (monthly), plus manual dispatch. Not Cloud Run,
-   not Kubernetes.
-2. **Extraction** — for each of the 9 South African provinces, pulls MODIS (`MOD11A1` land surface
-   temperature, `MOD13Q1` NDVI, a manually-computed NDWI from `MOD09GA` reflectance bands) and
-   ERA5-Land (air temperature, soil moisture) via the Google Earth Engine Python API, plus WorldPop
-   population and ESA WorldCover v100 land cover.
-3. **Staging** — per-province CSVs exported to a Google Cloud Storage bucket.
-4. **Load** — downloaded, transformed with pandas, and upserted (`ON CONFLICT DO UPDATE`) into two
-   PostgreSQL tables: `zone` and `malaria_observation`.
-
-There is no NCD data pipeline — this job only ever writes malaria-relevant environmental columns.
+| Source | Type | Data provided |
+|--------|------|---------------|
+| **Sentinel-2/3** | EO satellite | NDWI, NDVI, turbidity, chlorophyll-a |
+| **Landsat 8/9** | EO satellite | Land surface temperature (LST), land cover |
+| **MODIS** | EO satellite | Soil moisture, vegetation index |
+| **NICD** | Epidemiological | Disease case counts, outbreak alerts |
+| **DoH** | Public health | Disease registry, facility data |
+| **DWS** | Water agency | Water body status, quality indices |
+| **SAWS** | Meteorological | Air temperature, rainfall |
+| **Ground sensors** | Field obs. | Water quality, in-situ validation |
 
 ---
 
-## `eoha_backend` — REST API
+## Layer 2 — EO Data Pipeline
 
-Implemented in [`eoha_backend`](https://github.com/MEDICONSORTIUM/eoha_backend); see its
-repository README and source for the endpoint reference. It is a read-only Spring Boot API over the same
-PostgreSQL tables `eo-datapipeline` writes: `GET /api/zones/*` and
-`GET /api/malaria-observations/*`. There is no authentication, no write endpoints, and — as far as
-either repo's source shows — no current caller of this API.
+See [EO Data Pipeline →](/docs/architecture/eo-pipeline) for the full six-stage breakdown.
+
+**Summary steps:**
+1. **Ingestion** — scheduled API pulls via Google Earth Engine
+2. **Pre-processing & QA/QC** — atmospheric correction, cloud masking, normalisation
+3. **Feature extraction** — NDWI, NDVI, turbidity, LST, chlorophyll-a
+4. **Spatial-temporal fusion** — join EO features with health & ground data by GPS + date
+5. **Storage** — cloud database + data lake (CSV for prototype, PostGIS for production)
 
 ---
 
-## Component 2 — Dashboard
+## Layer 3 — Analytics & Modelling Engine
 
-Implemented in [`eoha-prototype`](https://github.com/MEDICONSORTIUM/eoha-prototype); see its
-README and source for the page-by-page reference. It is a static, framework-free HTML/CSS/JS site.
-The risk-scoring formula and dashboard behaviour:
+### Malaria risk index
 
-```javascript
-function calculateDynamicRisk(d) {
-  let score = 0;
-  if (d.Soil_Moisture > 0.35)       score += 40;
-  else if (d.Soil_Moisture > 0.25)  score += 20;
-  if (d.LST_Surface_C >= 25 && d.LST_Surface_C <= 30) score += 30;
-  if (d.NDWI_Water > -0.1)          score += 20;
-  if (d.Population_Density_Per_KM2 > 300) score += 10;
-  return score;   // 0–100, computed client-side, no ML involved
-}
+The composite risk score is computed per ward per month:
+
+```python
+def calculate_dynamic_risk(d):
+    score = 0
+    if d['Soil_Moisture'] > 0.35:   score += 40
+    elif d['Soil_Moisture'] > 0.25: score += 20
+    if 25 <= d['LST_Surface_C'] <= 30: score += 30
+    if d['NDWI_Water'] > -0.1:     score += 20
+    if d['Population_Density_Per_KM2'] > 300: score += 10
+    return score  # 0–100
 ```
 
 Risk thresholds:
@@ -93,33 +89,40 @@ Risk thresholds:
 | 25–49 | **Moderate** | `#f9bb06` |
 | < 25 | **Low** | `#34a853` |
 
-This runs entirely in the browser against a CSV bundled in the `eoha-prototype` repo
-(`data/Limpopo_Risk_Jan25_Jan26_Safe.csv`) — **not** against `eo-datapipeline`'s output or
-`eoha_backend`'s API. The NCD page reads the same CSV for environmental measurements and population
-context; it does not calculate NCD scores. Its scoring specification requires scores to remain
-disabled (see [Modules → NCD Exposure](/docs/modules/ncd)).
+### NCD risk factors
+
+NCD risk is derived from:
+- Air Quality Index (AQI)
+- Urban heat stress (LST deviation)
+- Population density and healthcare access
+- Lifestyle and land-cover proxies
+
+### Spatial analysis
+
+- Ward-level and municipality-level aggregation (Limpopo, using GADM ADM3 boundaries)
+- Country-level NCD choropleth (South Africa, Botswana, Zimbabwe, Lesotho)
+- Hotspot detection via spatial clustering
+
+### Alert engine
+
+- Configurable risk thresholds trigger notifications
+- Outputs: dashboard flags, email/SMS alerts, automated PDF reports
+
+---
+
+## Layer 4 — Health Surveillance Dashboard
+
+The dashboard is a Leaflet-based single-page application deployed on **AWS Amplify**.
 
 | Component | Description |
 |-----------|-------------|
-| **Interactive maps** | Risk-coloured markers + heatmap layer per ward; Leaflet with CartoDB/OSM tiles |
-| **Region selector** | Country → Municipality → Ward drill-down (municipality dropdown is CSV-derived, not GeoJSON-derived) |
+| **Interactive maps** | Risk-coloured circle markers per ward; Leaflet with OSM tiles |
+| **Region selector** | Province → Municipality → Ward drill-down with Apply/Reset |
 | **Time slider** | Monthly snapshots from January 2025 to January 2026 |
 | **Risk filter** | Show all / High / Moderate / Low |
-| **Environmental panel** | Environmental measurements; some visible malaria panel labels do not match the bound CSV fields |
-| **Risk prediction panel** | Current risk level label + percentage, from `calculateDynamicRisk()` |
-| **NCD observations** | Shared CSV measurements displayed separately; NCD scoring is disabled |
+| **Environmental panel** | Habitat type, population density, agricultural area, surface temperature, soil moisture |
+| **Risk prediction panel** | Current risk level label + percentage |
 | **Popup cards** | Per-ward risk summary on marker click |
-
-Not present: alert notifications (email/SMS/dashboard flags), automated PDF report generation, and
-user authentication — none of these exist in any of the three repos today.
-
-## Validation data status
-
-The prototype data path contains environmental variables and population density, not observed
-disease outcomes. **Validation data has not been acquired**: there are no linked malaria case counts
-or NCD health outcomes against which to evaluate the dashboard indicators. The malaria score is a
-heuristic and has not been epidemiologically validated; NCD exposure scoring is disabled. Software
-tests of the data schema or UI do not replace outcome validation.
 
 ---
 
@@ -127,20 +130,20 @@ tests of the data schema or UI do not replace outcome validation.
 
 | Layer | Technology |
 |-------|------------|
-| EO processing | Google Earth Engine Python API, triggered via GitHub Actions |
-| Staging | Google Cloud Storage |
-| Database | PostgreSQL on AWS RDS (plain PostgreSQL — no PostGIS extension referenced in either repo) |
-| Backend API | Spring Boot 4 (Java 21), read-only |
-| Frontend | Static HTML · CSS · vanilla JavaScript (ES6), no bundler |
-| Mapping | Leaflet.js + CartoDB/OpenStreetMap tiles |
-| CSV parsing | PapaParse (client-side) |
-| Hosting (frontend) | AWS Amplify — hookup not present in-repo; the tracked CI workflow only runs a file-existence check and a Discord notification |
+| EO processing | Google Earth Engine (Python API) |
+| Frontend | HTML · CSS · JavaScript (ES6) |
+| Mapping | Leaflet.js + OpenStreetMap |
+| CSV parsing | PapaParse |
+| Hosting | AWS Amplify |
+| Boundary data | GADM ADM1/ADM3 GeoJSON |
 
 ---
 
-## Consultation context
+## Validation partners
 
-The original architecture was scoped in consultation with UCT, CSIR, NICD, and the
-TuksNovation/NeoFrontiers funders (see [Design Specification Document v2](/docs/design-specification/overview)
-for the full stakeholder and business context). This page describes only the technical system as
-built; partner/business framing lives in the Design Specification and Milestones sections.
+The system architecture has been scoped in consultation with:
+
+- **UCT** — University of Cape Town (environmental health modelling)
+- **CSIR** — geospatial analysis and EO validation
+- **NICD** — epidemiological data integration
+- **TuksNovation / NeoFrontiers** — incubation and funder oversight

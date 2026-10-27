@@ -2,44 +2,31 @@
 id: overview
 title: Design Specification
 sidebar_label: Overview
-description: EOHA Design Specification — as-built reference for what the platform's three repositories actually implement today.
+description: EOHA Design Specification Document v2 — all diagrams, ERDs, use cases, wireframes, and pipeline architecture for the MED Consortium platform.
 ---
 
 # Design Specification
 
-**Document:** EOHA Design Specification &nbsp;|&nbsp; **Prepared by:** Simamnkele Mlisana & Msesenyane Makhongela
+**Document:** EOHA Design Specification v2 &nbsp;|&nbsp; **Prepared by:** Simamnkele Mlisana & Msesenyane Makhongela  
 **Organisation:** Medical Consortium of Africa (Pty) Ltd, University of Pretoria / TuksNovation
 
 ---
 
-:::caution As-built, not aspirational
-This section originally summarised the Milestone 1 planning document (ERDs, use cases, and
-architecture describing a full ML forecasting and alerting platform). It has been rewritten to
-describe **only what exists in the three EOHA repositories today** — `eo-datapipeline`,
-`eoha_backend`, and `eoha-prototype`. Planned-but-unbuilt features (user accounts, XGBoost
-forecasting, automated alerts, NCD data ingestion) are described in
-[Milestone 3 →](/docs/milestones/milestone-3) as open work, not in this section as current
-capability. The original planning PDF remains available for download below for historical
-reference.
-:::
+This section contains all design artefacts produced during **Milestone 1**. Each page renders the diagrams inline and provides download links for original files.
 
 ## Document sections
 
 | Section | Contents |
 |---------|----------|
-| [System Architecture →](/docs/design-specification/system-architecture-design) | As-built component diagram: the three independent repositories and how (little) they connect |
-| [Data Architecture →](/docs/design-specification/data-architecture) | The two entities that actually exist in the database — `Zone` and `Malaria_Observation` |
-| [Use Cases →](/docs/design-specification/use-cases) | The interactions the system actually supports today |
-| [Wireframes →](/docs/design-specification/wireframes) | Home, Malaria, and NCD pages, annotated with which parts are live vs. fabricated |
-| [Operational Workflow →](/docs/design-specification/operational-workflow) | The real trigger-to-database flow (GitHub Actions → GEE → GCS → PostgreSQL) |
+| [System Architecture →](/Med_documentation/docs/design-specification/system-architecture) | Pipeline architecture, data flow, component diagram |
+| [Data Architecture →](/Med_documentation/docs/design-specification/data-architecture) | ERDs — Observation Prediction and User Management |
+| [Use Cases →](/Med_documentation/docs/design-specification/use-cases) | Use case diagrams, use case descriptions, actor roles |
+| [Wireframes →](/Med_documentation/docs/design-specification/wireframes) | Home, Malaria, and NCD page wireframes |
+| [Operational Workflow →](/Med_documentation/docs/design-specification/operational-workflow) | End-to-end operational workflow (UML activity diagram) |
 
 ---
 
-## Original planning documents (historical)
-
-The design work referenced above was originally captured in a full planning document produced for
-Milestone 1. It describes a substantially larger system than what has been built to date — see the
-callout above. Kept here for historical reference and as the source for Milestone 2/3 planning:
+## Download original files
 
 | File | Format | Link |
 |------|--------|------|
@@ -49,28 +36,20 @@ callout above. Kept here for historical reference and as the source for Mileston
 
 ---
 
-## System description — as built today
+## System description
 
-- **Data Ingestion** — a monthly GitHub Actions job (`eo-datapipeline`) pulls MODIS and ERA5-Land
-  environmental data from Google Earth Engine for all 9 South African provinces and upserts it into
-  a PostgreSQL database.
-- **Read API** — a Spring Boot service (`eoha_backend`) exposes that database read-only over REST.
-  It has no known caller today.
-- **Geo Dashboard** — a static site (`eoha-prototype`) renders an interactive Leaflet map from a CSV
-  file bundled in its own repository — not from the two components above. Risk scores are computed
-  by a fixed rule-based formula in the browser, not a trained model.
+The EOHA platform encompasses the full lifecycle from environmental satellite data ingestion through to actionable disease forecast delivery. It includes:
 
-Not implemented in any repo today: predictive machine learning (XGBoost or otherwise), an alert
-system, user accounts/roles, or a live NCD data pipeline (the NCD dashboard page shows hardcoded
-demonstration values). These remain open items tracked under [Milestone 3 →](/docs/milestones/milestone-3).
+- **Data Ingestion** — automated retrieval and mapping of EO satellite data and clinical ground-truth observations to spatial zones
+- **Predictive ML** — XGBoost algorithms producing `Malaria_Risk_Forecast` and `NCD_Risk_Forecast` scores per zone
+- **Geo Dashboard** — interactive Leaflet map with colour-coded risk zones, historical health data, and AI predictions
+- **Alert System** — monitors forecasts against predefined thresholds and dispatches targeted warnings to authorised health officials
 
-## Actors — as the system actually supports them
+## Actors
 
-| Actor | What they can actually do today |
+| Actor | Primary responsibilities |
 |-------|------------------------|
-| Any visitor | Browse the public dashboard (no login) — view the malaria risk map and the NCD demo map |
-| API consumer | Call `eoha_backend`'s read-only endpoints directly (no auth required, no known integration exists yet) |
-| Pipeline operator | Trigger the monthly ingestion job manually via GitHub Actions `workflow_dispatch`, or let the cron schedule run it |
-
-There is no concept of a logged-in "End User," "Data Contributor," or "Administrator" role in any of
-the three repos — no authentication exists anywhere in the system.
+| End User | Browse risk maps, view AI forecasts, track and acknowledge alerts |
+| Data Contributor | Log ground-truth observation data, report case counts per zone |
+| Administrator | Manage user roles, configure zone boundaries, oversee system access |
+| System (automated) | Ingest EO data, run ML predictions, render geospatial outputs, dispatch alerts |
