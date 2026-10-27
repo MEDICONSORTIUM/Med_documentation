@@ -2,126 +2,90 @@
 id: use-cases
 title: Use Case Diagrams & Descriptions
 sidebar_label: Use Cases
-description: EOHA use case diagrams and detailed use case descriptions for Observation Prediction and User Management.
+description: As-built use cases for the EOHA platform — what the system actually supports today, with the original ML/alert/auth use cases marked as not implemented.
 ---
 
 # Use Cases
 
-The use case model defines all interactions between the four actors (End User, Data Contributor, Administrator, System) and the platform. It is divided into two sets: **Observation Prediction** (the core analytical domain) and **User Management** (access control and alerting).
+:::caution As-built, not the original plan
+The original use case set described interactions across four actors (End User, Data Contributor,
+Administrator, System) including ML forecast generation, automated alerting, and user/role
+management. None of those actors or use cases have any corresponding code today — there is no
+authentication, no user table, and no ML pipeline in any of the three repos. This page describes
+only the use cases the system actually supports. The original use case set is preserved in the
+downloadable `.docx` on the [overview page](/docs/design-specification/overview).
+:::
 
 ---
 
-## Observation Prediction use case diagram
+## As-built use cases
 
-This diagram maps the Admin and User actors to the full set of spatial data and forecast operations.
-
-![EOHA Observation Prediction Use Case Diagram](/assets/design-spec/FrontEOHA.drawio1.png)
-
-### Actor responsibilities
+Only two real actors exist in the running system: an unauthenticated **API caller** (anyone who can
+reach `eoha_backend`'s endpoints) and the **automated monthly pipeline job**. There is no concept of
+a logged-in user anywhere.
 
 | Actor | Use cases |
 |-------|-----------|
-| **Admin** | Create Zone, Read Zone, Update Zone (includes Read Zone) |
-| **User** | Create/Read Malaria_Observation, Create/Read NCD_Observation, Create/Read Ground_Observation |
-| **System/ML** | Create Malaria_Risk_Forecast, Create NCD_Risk_Forecast |
-| **User/System** | Read Malaria_Risk_Forecast, Read NCD_Risk_Forecast |
-
----
-
-## User Management use case diagram
-
-This diagram maps the Admin and User actors to role, user profile, and alert management operations.
-
-![EOHA User Management Use Case Diagram](/assets/design-spec/UseCaseERD.drawio.png)
-
-### Actor responsibilities
-
-| Actor | Use cases |
-|-------|-----------|
-| **Admin** | Create Role, Read Role, Update Role (includes Read Role); Create User |
-| **User** | Read User (includes Read Role), Update User (includes Read User) |
-| **User** | Create Alert (includes Read User), Read Alert (includes Read User), Update Alert Status (includes Read User + Read Alert) |
-| **System** | Create Alert automatically on high-risk forecast |
+| **Pipeline (automated, GitHub Actions)** | Ingest EO data monthly → upsert `zone` and `malaria_observation` rows |
+| **API caller (anyone, unauthenticated)** | `GET /api/zones`, `GET /api/zones/{id}`, `GET /api/zones/province/{name}`, `GET /api/zones/municipality/{name}`, `GET /api/malaria-observations` (and its four filtered variants) |
+| **Dashboard visitor (anyone, unauthenticated)** | Browse the malaria risk map and NCD demo map in `eoha-prototype`; filter by risk level, municipality, ward, and month |
 
 ---
 
 ## Use case descriptions
 
-### Create Malaria_Observation
+### Ingest monthly environmental data
 
 | Attribute | Detail |
 |-----------|--------|
-| **Trigger** | New 8-day satellite imagery batch available from GEE |
-| **Actors** | System Integration Service, External API (GEE) |
-| **Pre-conditions** | `ObservationCount > Minimum Threshold`; ML model weights loaded |
-| **Flow** | 1. GEE API generates latest imagery → 2. System pulls data for zone coordinates → 3. GEE returns JSON (temperature, soil moisture, water index) → 4. System maps to `zone_id` → 5. DB validates zone → 6. System inserts `Malaria_Observation` row |
-| **Post-condition** | New record in `MALARIA_OBSERVATION`: `[env_record_id, zone_id, date_recorded, lst_surface_temp_c, soil_moisture_pct]` |
+| **Trigger** | GitHub Actions cron fires (`0 0 1 * *`, monthly) or a maintainer runs `workflow_dispatch` manually |
+| **Actor(s)** | `eo-datapipeline`'s `etl_pipeline.py`, running on a GitHub-hosted runner |
+| **Pre-conditions** | `GCP_SA_JSON`, `BUCKET_NAME`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` secrets configured in the repo |
+| **Flow** | 1. Authenticate with GEE + GCS via service account → 2. For each of 9 provinces, build a stacked environmental image and export it to GCS → 3. Poll each export task every 30s until `COMPLETED` → 4. Download the CSV, split into `zone`/`malaria_observation` DataFrames → 5. Upsert both into PostgreSQL (`ON CONFLICT DO UPDATE`) |
+| **Post-condition** | Rows in `zone` and `malaria_observation` reflect the previous calendar month's environmental readings for all 9 provinces. Re-running for an already-processed month updates rows in place — never duplicates them. |
+| **Failure mode** | Any task reaching a non-`COMPLETED` terminal state, or any database exception, logs an error and exits non-zero (`sys.exit(1)`) — the whole run aborts rather than partially succeeding silently. |
 
----
-
-### Create Malaria_Risk_Forecast
-
-| Attribute | Detail |
-|-----------|--------|
-| **Trigger** | Scheduled integration service fires (every 8 days on new satellite pass) |
-| **Actors** | ML Pipeline |
-| **Pre-conditions** | Sufficient historical training data; ML model weights active |
-| **Flow** | 1. ML Pipeline initiates prediction sequence → 2. Queries `lst_surface_temp_c`, `soil_moisture_pct` (READ Malaria_Observation) → 3. Queries `aggregated_case_count` (READ Ground_Observation) → 4. Applies `environmental_lag_days`, runs XGBoost → 5. Outputs `outbreak_probability_score` per zone → 6. DB validates `zone_id` → 7. INSERT into `MALARIA_RISK_FORECAST` → IF score > 0.80 → trigger Create User_Risk_Alert |
-| **Post-condition** | New record in `MALARIA_RISK_FORECAST`: `[forecast_id, zone_id, target_prediction_date, outbreak_probability_score]` |
-
----
-
-### Create User_Risk_Alert
+### Read zone data via the API
 
 | Attribute | Detail |
 |-----------|--------|
-| **Trigger** | ML Pipeline saves forecast with `outbreak_probability_score > 0.80` |
-| **Actors** | System (automated) |
-| **Pre-conditions** | High-risk forecast exists |
-| **Flow** | 1. System intercepts high-risk trigger → 2. Queries all users assigned to affected `zone_id` → 3. Retrieves `user_id` and `email_address` from USER table → 4. Formats alert payload (status = 'Active') → 5. Dispatches email → 6. INSERT into `USER_RISK_ALERT` |
-| **Post-condition** | New records in `USER_RISK_ALERT` linking `user_id` to `forecast_id` with `alert_status = 'Active'` |
+| **Trigger** | An HTTP `GET` request to any `/api/zones*` route |
+| **Actor(s)** | Any HTTP client — no authentication is checked |
+| **Pre-conditions** | None |
+| **Flow** | 1. Request hits `ZoneController` → 2. Delegates to `ZoneService` → 3. `ZoneRepository` (Spring Data JPA) issues the matching query → 4. Result wrapped in `ApiResponse.success(...)` and returned as JSON |
+| **Post-condition** | Read-only — no database state changes. A missing single-zone lookup returns HTTP 404 (`RuntimeException` → `GlobalExceptionHandler`); a filtered list with no matches returns HTTP 200 with an empty array. |
 
----
-
-### Update Alert Status
+### Read malaria observation data via the API
 
 | Attribute | Detail |
 |-----------|--------|
-| **Trigger** | User clicks "Acknowledge" or "Resolve" on an active alert in the dashboard |
-| **Actors** | User |
-| **Pre-conditions** | Alert exists in DB with `alert_status = 'Sent'` or `'Active'`; user authenticated |
-| **Flow** | 1. User logs in, navigates to Active Alerts panel → 2. System fetches alerts for user's zones → 3. User clicks alert → 4. System fetches corresponding forecast details → 5. User reviews `outbreak_probability_score` and map → 6. User clicks 'Acknowledge Alert' → 7. System updates `alert_status = 'Acknowledged'` |
-| **Post-condition** | Alert record updated; removed from Active view; moved to Historical/Resolved |
+| **Trigger** | An HTTP `GET` request to any `/api/malaria-observations*` route |
+| **Actor(s)** | Any HTTP client — no authentication is checked |
+| **Pre-conditions** | Date path parameters must be ISO-8601 (`yyyy-MM-dd`) or the request returns HTTP 400 |
+| **Flow** | Same pattern as zone reads: Controller → Service → Repository → `ApiResponse` envelope |
+| **Post-condition** | Read-only. As with zones, missing-by-ID returns 404; empty filtered lists return 200 with `[]`. |
 
----
-
-### Read Malaria_Risk_Forecast
+### View the malaria risk map
 
 | Attribute | Detail |
 |-----------|--------|
-| **Trigger** | User navigates to Risk Map dashboard view |
-| **Actors** | User |
-| **Pre-conditions** | Forecasts exist for the current date range |
-| **Flow** | 1. User clicks Risk Map tab → 2. System requests polygon boundaries (ZONE table) and latest forecasts (MALARIA_RISK_FORECAST) → 3. System merges spatial data with forecast scores, applies colour coding (red > 0.80) → 4. User views rendered interactive map |
-| **Post-condition** | Read-only — no DB state changes |
+| **Trigger** | A visitor opens `pages/malaria-page.html` |
+| **Actor(s)** | Any site visitor — no login |
+| **Pre-conditions** | None |
+| **Flow** | 1. Page loads → 2. PapaParse streams `data/Limpopo_Risk_Jan25_Jan26_Safe.csv` client-side → 3. Each row is scored by `calculateDynamicRisk()` (a fixed rule-based formula) → 4. Leaflet renders a coloured marker + heatmap point per ward for the selected month → 5. Visitor can filter by risk level, drill into a municipality/ward, and move the time slider |
+| **Post-condition** | Read-only, entirely client-side. Nothing is sent to any server beyond the initial CSV/tile/library downloads. |
 
 ---
 
-## Download use case document
+## Not implemented
 
-<a
-  href="/Med_documentation/assets/design-spec/Use%20Case%20Set.docx"
-  style={{
-    display: 'inline-block',
-    padding: '0.5rem 1.2rem',
-    background: 'var(--ifm-color-primary)',
-    color: '#fff',
-    borderRadius: '6px',
-    fontWeight: 600,
-    fontSize: '14px',
-    textDecoration: 'none',
-    margin: '1rem 0',
-  }}
->
-  Download Use Case Set (.docx) →
-</a>
+The following use cases from the original plan have no corresponding code anywhere in the three
+repos and are not currently achievable on the platform:
+
+- Create/read `Malaria_Risk_Forecast` or `NCD_Risk_Forecast` (no ML pipeline exists)
+- Create `User_Risk_Alert` / update alert status (no alerting code, no user table)
+- Create/read/update `User` or `Role` (no authentication anywhere)
+- Create/read `NCD_Observation` or `Ground_Observation` (no NCD data pipeline, no clinical case
+  ingestion)
+- Update `Zone` boundaries via the API (`eoha_backend` exposes `GET` endpoints only — no `POST`,
+  `PUT`, `PATCH`, or `DELETE` mappings exist on either controller)

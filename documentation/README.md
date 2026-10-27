@@ -12,14 +12,12 @@
 
 **Satellites watching. Algorithms thinking. Communities safer.**
 
-[![Playwright Tests](https://img.shields.io/badge/playwright-264%2F267%20passing-4CAF50?style=flat-square&logo=playwright)](https://mediconsortium.github.io/Med_documentation/docs/testing/overview)
-[![pytest](https://img.shields.io/badge/pytest-98%2F98%20passing-4CAF50?style=flat-square&logo=pytest)](https://mediconsortium.github.io/Med_documentation/docs/testing/pipeline-tests)
-[![Milestone](https://img.shields.io/badge/milestone-M2%20active-1a82ff?style=flat-square)](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-2)
+[![Milestone](https://img.shields.io/badge/milestone-M3%20active-1a82ff?style=flat-square)](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-3)
 [![Docs](https://img.shields.io/badge/docs-live-0070f3?style=flat-square)](https://mediconsortium.github.io/Med_documentation/)
-[![Platform](https://img.shields.io/badge/platform-live-0070f3?style=flat-square)](https://main.d1jko0jkg4m7f.amplifyapp.com)
+[![Platform](https://img.shields.io/badge/platform-live-0070f3?style=flat-square)](https://www.eoha.co.za)
 [![License](https://img.shields.io/badge/license-MIT-gray?style=flat-square)](./LICENSE)
 
-[Live Platform](https://main.d1jko0jkg4m7f.amplifyapp.com) · [Documentation](https://mediconsortium.github.io/Med_documentation/) · [Milestone 2](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-2) · [Report a Bug](https://github.com/mediconsortium/Med_documentation/issues)
+[Live Platform](https://www.eoha.co.za/) · [Documentation](https://mediconsortium.github.io/Med_documentation/) · [Milestone 3](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-3) · [Report a Bug](https://github.com/mediconsortium/Med_documentation/issues)
 
 </div>
 
@@ -29,11 +27,10 @@
 
 Every year, **malaria kills over 600 000 people** — the overwhelming majority of them in sub-Saharan Africa, and the overwhelming majority of them children under five. Meanwhile, non-communicable diseases — hypertension, cardiovascular disease, respiratory illness — are rising silently across the same communities, fuelled by urbanisation, air quality decline, and environmental stress that nobody is measuring at the ward level.
 
-The data to fight both threats already exists. It falls from orbit every single day — from Sentinel-2 multispectral imagers, MODIS thermal sensors, ERA5 climate reanalysis grids, and Copernicus atmospheric monitors. Petabytes of it. Free. Publicly accessible. Almost completely unused by the people who need it most.
-
-**EOHA closes that gap.**
-
-We ingest satellite data, run it through an environmental risk pipeline, and surface the results as a ward-level risk score on a map that a public health official can open in a browser with no training, no GIS expertise, and no dedicated infrastructure. Select a ward. See the risk. Act.
+Earth observation products provide environmental measurements that may help researchers study these
+risks. The EOHA prototype makes a subset of environmental observations available in a browser
+dashboard. Disease validation data has not been acquired, so the current environmental indicators
+and heuristic score are not validated disease predictions.
 
 ---
 
@@ -48,7 +45,7 @@ This repository is the **documentation site** for the EOHA platform — a [Docus
 - A living walkthrough of the platform's current state
 - Milestone progress and partner information
 
-The **platform itself** lives at [main.d1jko0jkg4m7f.amplifyapp.com](https://main.d1jko0jkg4m7f.amplifyapp.com) and is deployed separately via AWS Amplify.
+The **public webapp** is available at [www.eoha.co.za](https://www.eoha.co.za/). This documentation repository is maintained separately from the prototype application.
 
 ---
 
@@ -58,30 +55,18 @@ The **platform itself** lives at [main.d1jko0jkg4m7f.amplifyapp.com](https://mai
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         EOHA Platform                               │
 │                                                                     │
-│  ┌──────────────┐    ┌────────────────┐    ┌─────────────────────┐ │
-│  │   Sentinel-2 │    │  MODIS / ERA5  │    │ Copernicus S5P / GFS│ │
-│  │  (NDVI/NDWI) │    │  (LST / soil)  │    │   (NO₂ / aerosol)  │ │
-│  └──────┬───────┘    └───────┬────────┘    └──────────┬──────────┘ │
-│         └────────────────────┴─────────────────────────┘           │
-│                              │                                      │
-│                    Google Earth Engine                              │
-│                    reduceRegions() @ 1km                            │
-│                              │                                      │
-│                   Cloud Run / Python pipeline                       │
-│                   → GCS export → PostgreSQL                         │
-│                              │                                      │
-│          ┌───────────────────┴────────────────────┐                │
-│          │           AWS Amplify frontend          │                │
-│          │                                         │                │
-│          │  ┌──────────────────────────────────┐  │                │
-│          │  │  Leaflet map + heatmap overlay   │  │                │
-│          │  │  Ward-level risk donuts          │  │                │
-│          │  │  Cascading dropdowns             │  │                │
-│          │  │  13-month timeline slider        │  │                │
-│          │  └──────────────────────────────────┘  │                │
-│          └─────────────────────────────────────────┘               │
+│  eoha-prototype (public dashboard)                                  │
+│  └── bundled monthly CSV → browser map and environmental indicators │
+│      └── malaria: rule-based environmental suitability score        │
+│      └── NCD: environmental observations; no disease score          │
 │                                                                     │
-│  Coverage: 9 municipalities · 7 384 ward-months · 13 EO bands      │
+│  eo-datapipeline (separate monthly job)                              │
+│  └── Google Earth Engine → GCS → PostgreSQL                         │
+│                                                                     │
+│  eoha_backend (separate read-only API)                               │
+│  └── can query pipeline database; no dashboard caller documented    │
+│                                                                     │
+│  Disease outcome / validation data: not acquired                    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -89,85 +74,48 @@ The **platform itself** lives at [main.d1jko0jkg4m7f.amplifyapp.com](https://mai
 
 ## The two modules
 
-### 🦟 Malaria Risk
+### 🦟 Malaria environmental indicator
 
-Vector habitat suitability calculated from four environmental signals:
+The prototype maps monthly environmental observations and computes a fixed rule-based habitat
+suitability score in the browser. This score is not generated by a trained model and has not been
+validated against malaria case data. The input CSV is bundled with the frontend rather than
+retrieved from the separate EO pipeline at runtime.
 
-| Signal | Source | Threshold |
-|--------|---------|-----------|
-| Soil moisture | ERA5 | > 0.25 m³/m³ triggers; > 0.35 catches peak breeding |
-| Land surface temperature | MODIS MOD11A1 | 25 – 30 °C is the Anopheles sweet spot |
-| Water presence (NDWI) | Sentinel-2 | > −0.1 indicates standing water |
-| Population density | WorldPop | > 300 persons/km² amplifies transmission risk |
+### 🫀 NCD environmental observations
 
-The composite score runs 0 – 100 and is resolved at the ward level, every month, across all of Limpopo Province. Green wards are quiet. Red wards need attention. The heatmap makes the pattern undeniable.
-
-### 🫀 NCD Risk
-
-The 5th Wave Index — our framing for the non-communicable disease burden rising alongside infectious disease in the same communities. Environmental inputs include NO₂ column density (Copernicus S5P TROPOMI), aerosol index, UV radiation, land surface temperature, and ESA urban cover fraction. The NCD module is in active development at Milestone 2.
+The current NCD page presents environmental measurements and geographic context. It does not
+calculate an NCD disease score or forecast. Proposed NCD indicators and the “5th Wave Index” remain
+design concepts until supported by acquired inputs and reviewed methods.
 
 ---
 
-## Current status — Milestone 2
+## Current status — Milestone 3
 
-> **M2 is active.** March – August 2026.
+> **M3 is active.** The prototype currently collects environmental variables only; disease validation
+> data has not been acquired. The available data do not support epidemiological performance claims.
 
-| Deliverable | Status |
-|-------------|--------|
-| Malaria Risk Dashboard (map, heatmap, donuts, slider) | ✅ Live |
-| Limpopo CSV dataset (7 384 records, 13 months) | ✅ Published |
-| EO ingestion pipeline (GEE → GCS → PostgreSQL) | ✅ Built |
-| Playwright test suite — 264 / 267 outcomes passing | ✅ Running |
-| pytest pipeline suite — 98 / 98 passing | ✅ Running |
-| Documentation site (Docusaurus) | ✅ Live |
-| NCD Risk Dashboard | 🔵 In development |
-| XGBoost Malaria Forecasting | 🔵 In development |
-| Cloud Run server-side scoring API | 🔵 In development |
-| User Risk Alert system | 🔵 In development |
-| Multi-country expansion (Zambia) | ⏳ M3 |
-| SADHS validation + model audit | ⏳ M3 |
+| Area | Current evidence |
+|------|------------------|
+| Public webapp | [www.eoha.co.za](https://www.eoha.co.za/) |
+| Malaria page | Environmental observations and a heuristic browser-side score; not validated against cases |
+| NCD page | Environmental observations; disease scoring is disabled |
+| Data collection | Environmental variables only; no health outcomes or validation labels acquired |
+| EO pipeline | Separate monthly GEE ingestion job; not the source used by the dashboard CSV at runtime |
+| Forecast model, NCD pipeline, alert engine | Not present in the reviewed prototype implementation |
+| Software tests | Component and pipeline checks are documented; they do not establish epidemiological validity |
 
-Full sprint plan (S1–S5, March – August 2026) is in the [Milestone 2 doc](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-2).
-
+M2's development period has ended, but some targets remain open. M3 focuses on verifying the
+implemented prototype, documenting gaps, and acquiring governed outcome data before any disease
+model audit. See the [Milestone 3 plan](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-3)
+and [test overview](https://mediconsortium.github.io/Med_documentation/docs/testing/overview).
 ---
 
 ## Test results
 
-We test everything that can be tested without credentials.
-
-### Playwright — browser-level dashboard tests
-
-```
-Run date:  23 April 2026
-Duration:  ~504 seconds · 6 parallel workers
-Browsers:  Chromium · Firefox · WebKit
-
-MalariaDashboard.spec.js    153 outcomes    ✅ All passing
-malaria-api.spec.js          63 outcomes    ✅ All passing
-malaria-visual.spec.js       42 outcomes    ⚠️ 39 passing · 3 failing (WebKit only)
-example.spec.js               9 outcomes    ✅ All passing
-────────────────────────────────────────────────────────
-Total                        267            264 passing
-```
-
-The 3 failing tests are visual regression screenshots in WebKit. The same screenshots pass on Chromium and Firefox. The failures are a WebKit-specific compositing behaviour after Leaflet map animations — not a logic bug, not a data bug, not a UX bug. The UI is in the correct state in every case. [Full analysis in the docs](https://mediconsortium.github.io/Med_documentation/docs/testing/dashboard-tests#webkit-failures).
-
-### pytest — server-side pipeline tests
-
-```
-Run date:  continuous
-Duration:  0.82 seconds
-
-test_unit_gee.py               13 / 13    ✅
-test_integration_transforms.py  27 / 27   ✅
-test_integration_db.py          23 / 23   ✅
-test_e2e_pipeline.py            35 / 35   ✅
-────────────────────────────────────────────
-Total                           98 / 98   ✅
-```
-
-No GEE credentials. No GCS credentials. No database. Everything mocked at the correct boundary. The suite runs in under a second.
-
+Test results are repository- and revision-specific. See the [test overview](https://mediconsortium.github.io/Med_documentation/docs/testing/overview)
+for the documented dashboard and pipeline suites. These software checks cover implementation
+behaviour and data contracts; they do not validate disease predictions. Validation data has not been
+acquired.
 ---
 
 ## Repository structure
@@ -370,15 +318,19 @@ Land_Cover          int     ESA land cover class (mode)
 |-----------|--------|--------|
 | M0 — Compliance | Oct 2025 | ✅ Complete |
 | M1 — System Design | Nov 2025 – Mar 2026 | ✅ Complete |
-| **M2 — Prototype Development** | **Mar – Aug 2026** | 🔵 **Active** |
-| M3 — Validation | Aug – Nov 2026 | ⏳ Upcoming |
+| M2 — Prototype Development | Mar – Aug 2026 | ✅ Period complete; open targets carried forward |
+| **M3 — Validation & Testing** | **Aug – Nov 2026** | 🔵 **Active** |
 
-M1 delivered: system architecture, ERDs, use case sets, domain model, ETL pipeline architecture for both disease tracks, wireframes, and the Design Specification Document v2.
+M1 delivered design artefacts: architecture, ERDs, use cases, domain models, pipeline designs,
+wireframes, and the Design Specification Document v2.
 
-M2 is delivering: the working malaria dashboard, the automated GEE ingest pipeline, the XGBoost forecasting model, the NCD Copernicus pipeline, the Cloud Run scoring API, and the User Risk Alert integration.
+M2's implementation review found the dashboard and a separate monthly EO ingestion pipeline. It did
+not find the planned XGBoost forecaster, NCD atmospheric pipeline, Cloud Run scoring API, alert
+engine, or multi-country ingestion.
 
-M3 will deliver: SADHS validation, model audit, multi-country expansion, and the full public platform launch.
-
+M3 is active. Validation remains blocked because disease outcome data has not been acquired. The
+current collection contains environmental variables only; software tests cannot replace outcome
+validation. See the [M3 plan](https://mediconsortium.github.io/Med_documentation/docs/milestones/milestone-3).
 ---
 
 ## Contributing

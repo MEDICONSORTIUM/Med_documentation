@@ -41,14 +41,19 @@ The MED Consortium platform is developed and validated in collaboration with the
 
 ## Technology partners
 
+:::caution Data-source row corrected against `eo-datapipeline` source
+The live pipeline uses MODIS and ERA5-Land only — see
+[Data → Google Earth Engine](/docs/data/google-earth-engine) for the verified, as-built collection
+list. No Sentinel, Landsat, or SMAP data is queried by any script in any of the three repos today.
+:::
+
 | Platform | Role |
 |----------|------|
-| **Google Earth Engine** | Cloud-based EO processing and data extraction |
-| **AWS Amplify** | Platform hosting and continuous deployment |
-| **OpenStreetMap** | Base map tiles (Leaflet) |
-| **GADM** | Administrative boundary data (ADM1, ADM3) |
-| **ESA / Copernicus** | Sentinel-2, Sentinel-3, Sentinel-5P imagery |
-| **NASA / USGS** | Landsat 8/9, MODIS, SMAP datasets |
+| **Google Earth Engine** | Cloud-based EO processing and data extraction — as-built, uses MODIS (`MOD11A1`, `MOD13Q1`, `MOD09GA`) and ERA5-Land, not Sentinel/Landsat/SMAP |
+| **AWS Amplify** | Platform hosting (deploy hookup not visible in-repo — see [System Architecture](/docs/architecture/system-architecture)) |
+| **OpenStreetMap / CartoDB** | Base map tiles (Leaflet) |
+| **WorldPop, ESA WorldCover** | Population density and land-cover data, via GEE |
+| **geoBoundaries** | `South_Africa_ADM1.geojson`'s actual schema (province level only — no ADM3/municipality file exists) |
 
 ---
 

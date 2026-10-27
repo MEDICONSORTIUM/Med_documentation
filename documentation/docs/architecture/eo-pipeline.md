@@ -6,159 +6,105 @@ sidebar_label: EO Data Pipeline
 
 # Annexure B — EO Data Pipeline Framework
 
-> **Deliverable for Milestone 1** — Data pipeline and storage architecture plan.
+> **As-built reference**, verified directly against
+> [`eo-datapipeline/etl_pipeline.py`](https://github.com/MEDICONSORTIUM/eo-datapipeline/blob/main/etl_pipeline.py).
+> Originally drafted as a Milestone 1 plan describing a broader six-stage framework with health-data
+> fusion and an alerting loop; this page now describes the pipeline that actually runs.
 
 ## Overview
 
-The EO Data Pipeline is a six-stage framework that takes raw satellite imagery from acquisition through to health surveillance output. All EO processing is performed via **Google Earth Engine** (GEE), with health and ground-truth data integrated at the fusion stage.
+The real pipeline is a single Python script (`etl_pipeline.py`) with eight sequential steps, triggered
+monthly by a GitHub Actions cron job. It ingests **only EO/reanalysis data** — there is no ground-truth
+health-data fusion step, no NCD track, and no downstream alerting anywhere in this repo.
 
 ```
-Stage 1: EO Data Acquisition
+Step 0: Authenticate (GCP service account → ee.Initialize + GCS client)
         ↓
-Stage 2: Pre-processing & QA/QC
-        ↓  ← Health data inputs (NICD, DoH)
-Stage 3: Feature Extraction          ← Ground truth (sensors, lab)
+Step 1: Resolve processing month (previous calendar month)
         ↓
-Stage 4: Spatial-Temporal Data Fusion
+Step 2: Load shared assets (ward boundaries, WorldPop, ESA WorldCover)
         ↓
-Stage 5: Risk Modelling Engine
+For each of 9 provinces:
+  Step 3: Build per-band images (LST, NDVI, NDWI, ERA5 temp + soil moisture)
+  Step 4: Reduce to per-ward statistics (mean + habitat mode, scale=1000m)
+  Step 5: Submit GCS export task
         ↓
-Stage 6: Surveillance Dashboard Output
-        ↑________ validation feedback loop __________↑
+For each submitted task:
+  Step 6: Poll until COMPLETED (30s interval); any other terminal state aborts the run
+  Step 7: Transform CSV → zone + malaria_observation DataFrames
+  Step 8: Upsert into PostgreSQL (ON CONFLICT DO UPDATE)
 ```
 
 ---
 
-## Stage 1 — EO Data Acquisition
+## Data sources actually used
 
-**Sources ingested:**
+| Indicator | GEE Collection | Band(s) | Transform |
+|-----------|---------------|---------|-----------|
+| Land surface temperature | `MODIS/061/MOD11A1` | `LST_Day_1km` | `×0.02 − 273.15` (K→°C) |
+| Vegetation index (NDVI) | `MODIS/061/MOD13Q1` | `NDVI` | `×0.0001` |
+| Water index (NDWI) | `MODIS/061/MOD09GA` | `sur_refl_b04`, `sur_refl_b02` | Manually computed normalized difference — there is no native NDWI band or product used |
+| Air temperature | `ECMWF/ERA5_LAND/HOURLY` | `temperature_2m` | `− 273.15` (K→°C) |
+| Soil moisture | `ECMWF/ERA5_LAND/HOURLY` | `volumetric_soil_water_layer_1` | raw (m³/m³) |
+| Population | `WorldPop/GP/100m/pop` (2020) | `population` | `×100` → per km² |
+| Land cover / cropland | `ESA/WorldCover/v100` | `Map` | `==40` mask (cropland) + mode per ward (habitat class) |
 
-| Satellite | Band / Product | Spatial res. | Temporal res. |
-|-----------|---------------|-------------|---------------|
-| Sentinel-2 MSI | B3 (Green), B8 (NIR), B11 | 10 m | 5 days |
-| Sentinel-3 SLSTR | LST | 1 km | Daily |
-| Landsat 8/9 OLI | NDVI, land cover | 30 m | 16 days |
-| MODIS Terra | Soil moisture proxy | 500 m | Daily |
-| MODIS Aqua | Chlorophyll-a, SST | 1 km | Daily |
+Sentinel-2/3 and Landsat — cited in the original plan — are **not used**; every band actually pulled
+comes from MODIS or ERA5-Land. There is no separate "pre-processing/QA-QC" stage with atmospheric
+correction or cloud-percentage filtering — each band is instead wrapped in a guard function,
+`build_safe_band_image()`, that substitutes a blank masked image if the collection has zero scenes
+for the processing month, so a data-sparse month doesn't crash the run rather than being cleaned in a
+dedicated stage.
 
-**Acquisition method:** Scheduled batch pulls via the GEE Python API. Assets are filtered by date range, cloud cover threshold (< 20 %) and study area boundary.
+### NDWI, as actually computed
 
 ```python
-import ee
-ee.Initialize()
-
-sentinel2 = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-    .filterDate('2025-01-01', '2026-01-31')
-    .filterBounds(limpopo_geometry)
-    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)))
+ndwi = collection.map(
+    lambda img: img.normalizedDifference(['sur_refl_b04', 'sur_refl_b02'])
+).mean().rename('NDWI_Water')
 ```
 
----
+(`sur_refl_b04`/`sur_refl_b02` are MODIS red/NIR-adjacent surface-reflectance bands — not the
+Sentinel-2 Green/NIR pair the original plan described.)
 
-## Stage 2 — Pre-processing & QA/QC
+### Risk-relevant thresholds used downstream (in `eoha-prototype`, not in this pipeline)
 
-All imagery is processed to surface-ready values before analysis.
-
-| Step | Description |
-|------|-------------|
-| **Atmospheric correction** | Sentinel-2 SR product already corrected; Landsat applies USGS surface reflectance |
-| **Cloud masking** | SCL band (Sentinel-2) and QA_PIXEL (Landsat) used to mask cloud and shadow |
-| **Normalisation** | Band values scaled to 0–1 reflectance range |
-| **Temporal compositing** | Monthly median composites reduce noise from residual cloud |
-| **QA/QC checks** | Automated scripts flag missing data, extreme outliers and CRS mismatches |
-
----
-
-## Stage 3 — Feature Extraction
-
-Five primary indices are derived from the pre-processed imagery:
-
-### NDWI — Normalised Difference Water Index
-
-Detects surface water and waterlogged areas (mosquito breeding habitat):
-
-```
-NDWI = (Green – NIR) / (Green + NIR)
-```
-
-Values > −0.1 indicate significant surface water presence.
-
-### NDVI — Normalised Difference Vegetation Index
-
-Tracks vegetation density and seasonal land-cover change:
-
-```
-NDVI = (NIR – Red) / (NIR + Red)
-```
-
-### LST — Land Surface Temperature
-
-Derived from Sentinel-3 SLSTR and Landsat thermal bands. Key malaria vector activity range: **25°C – 30°C**.
-
-### Soil Moisture
-
-Approximated from MODIS surface reflectance and Sentinel-1 SAR backscatter. Threshold values:
+The pipeline itself does no scoring — it only produces raw environmental values. The thresholds below
+are applied client-side in the dashboard, not here:
 
 | Value | Interpretation |
 |-------|---------------|
-| > 0.35 | High moisture — high vector risk (+40 pts) |
-| 0.25–0.35 | Moderate moisture (+20 pts) |
-| < 0.25 | Low moisture |
+| Soil moisture > 0.35 | +40 risk points |
+| Soil moisture 0.25–0.35 | +20 risk points |
+| LST 25°C–30°C | +30 risk points |
+| NDWI > −0.1 | +20 risk points |
 
-### Agric_Percentage
+### `Agric_Percentage`
 
-Proportion of the ward covered by agricultural land, derived from ESA WorldCover 10 m land cover classification (Class 40 — Cropland).
-
----
-
-## Stage 4 — Spatial-Temporal Data Fusion
-
-EO features are joined to health and ground-truth datasets using **ward boundary polygons** (GADM ADM3 for Limpopo) and **monthly time steps**.
-
-```
-EO Features (per ward, per month)
-    + NICD case counts (per ward, per month)
-    + Ground sensor readings (per station, interpolated to ward)
-    ─────────────────────────────────────────
-    → Fused dataset: Limpopo_Risk_Jan25_Jan26_Safe.csv
-```
-
-**CSV schema:**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `Month` | string | `Jan 2025` … `Jan 2026` |
-| `WardLabel` | string | Ward code (e.g. `LIM331_1`) |
-| `Municipali` | string | Municipality name |
-| `latitude` | float | Ward centroid latitude |
-| `longitude` | float | Ward centroid longitude |
-| `LST_Surface_C` | float | Land surface temperature (°C) |
-| `Air_Temp_C` | float | Air temperature (°C) |
-| `Soil_Moisture` | float | Soil moisture index (0–1) |
-| `NDWI_Water` | float | NDWI surface water index |
-| `Habitat_Vegetation_Index` | float | Vegetation density (0–1) |
-| `Agric_Percentage` | float | Agricultural area fraction |
-| `Population_Density_Per_KM2` | float | Population density |
-| `Habitat_Class_Code` | float | ESA WorldCover class code |
-
-**Current dataset:** 7,384 records · 13 months · Limpopo Province · 9 municipalities
+Fraction of each ward classified as cropland (ESA WorldCover class 40), reduced with `scale=1000` —
+not the 10 m native resolution of the source classification.
 
 ---
 
-## Stage 5 — Risk Modelling Engine
+## Output: two PostgreSQL tables, not a fused CSV
 
-See [System Architecture — Analytics & Modelling Engine](/docs/architecture/system-architecture#layer-3--analytics--modelling-engine) for the full risk formula.
+The pipeline's actual output is two upserted PostgreSQL tables — `zone` (11 columns) and
+`malaria_observation` (8 columns) — reachable only through `eoha_backend`'s REST API. It does **not**
+produce, and has no code path to, the `Limpopo_Risk_Jan25_Jan26_Safe.csv` file the dashboard reads;
+that file lives directly inside the `eoha-prototype` repo and is not regenerated by this pipeline. See
+[`eo-datapipeline/SUMMARY.md`](https://github.com/MEDICONSORTIUM/eo-datapipeline/blob/main/SUMMARY.md)
+for the full column-level schema.
 
-**Key outputs per ward per month:**
-- Composite risk score (0–100)
-- Risk label: High / Moderate / Low
-- Risk colour: `#d93025` / `#f9bb06` / `#34a853`
+**Current dataset actually loaded by the dashboard:** 58,085 records · 13 months · all 9 South
+African provinces (despite the file's "Limpopo" name) · 4,468 wards. See
+[Datasets →](/docs/data/datasets) for the reconciled detail.
 
 ---
 
-## Stage 6 — Surveillance Dashboard Output
+## Dashboard consumption (separate component)
 
-The processed risk data is served to the frontend as a CSV file loaded at runtime by PapaParse:
+The frontend loads its own bundled CSV via PapaParse — this is unrelated to the pipeline described
+above:
 
 ```javascript
 Papa.parse('../data/Limpopo_Risk_Jan25_Jan26_Safe.csv', {
@@ -175,17 +121,15 @@ Papa.parse('../data/Limpopo_Risk_Jan25_Jan26_Safe.csv', {
 });
 ```
 
-The dashboard renders Leaflet circle markers coloured by risk score, with popups, time-slider filtering and dropdown drill-down.
+The dashboard renders Leaflet markers and a heatmap layer coloured by client-side risk score, with
+popups, time-slider filtering, and dropdown drill-down. See
+[`eoha-prototype/SUMMARY.md`](https://github.com/MEDICONSORTIUM/eoha-prototype/blob/main/SUMMARY.md).
 
 ---
 
-## Validation feedback loop
+## What doesn't exist yet
 
-Post-render, stakeholder feedback from UCT, CSIR and NICD is used to:
-
-1. Audit risk score accuracy against known disease burden data
-2. Adjust index weights in the modelling engine
-3. Validate QA/QC thresholds
-4. Refine ward boundary alignment
-
-This loop is formalised in **Milestone 3** (Prototype Validation & Testing).
+The original plan described a validation feedback loop (stakeholder review of risk-score accuracy
+against disease-burden data, index-weight tuning, QA/QC threshold validation) formalised in
+Milestone 3. As of this writing there is no code implementing any part of that loop — no health-data
+ingestion, no ground-truth comparison, and no automated weight-tuning exist in any of the three repos.

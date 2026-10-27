@@ -1,119 +1,74 @@
 ---
 id: ncd
-title: NCD Risk Module
-sidebar_label: NCD Risk
+title: NCD Exposure Module
+sidebar_label: NCD Exposure
 ---
 
-# NCD Risk Module
+# NCD Exposure Module
 
-The NCD (Non-Communicable Disease) risk module maps environmental and lifestyle risk factors for conditions such as cardiovascular disease, diabetes, respiratory disease and obesity across **Southern Africa**.
+The current NCD page is an **environmental observation prototype**. It presents measurements from
+the shared monthly CSV and geographic boundaries; it does not calculate or display an NCD disease
+score.
 
 :::tip Live module
-Open the NCD dashboard: [https://main.d1jko0jkg4m7f.amplifyapp.com/](https://main.d1jko0jkg4m7f.amplifyapp.com/) → NCD Risk Prediction
+Open the NCD dashboard: [https://www.eoha.co.za/](https://www.eoha.co.za/) → NCD Exposure
 :::
 
----
+:::caution Validation data has not been acquired
+The current disease-monitoring collection uses environmental variables only. It does not contain
+observed disease cases, health outcomes, or a validation dataset.
+The environmental measurements have therefore **not been validated against disease incidence**.
+The dashboard labels exposure scores as unavailable, and the scoring specification keeps scoring
+disabled. These observations must not be interpreted as individual disease probabilities or as
+validated NCD risk estimates.
+:::
 
-## Scope
+## Current data and coverage
 
-| Property | Detail |
-|----------|--------|
-| **Geography** | South Africa · Botswana · Zimbabwe · Lesotho |
-| **Granularity** | Country → Province → Municipality |
-| **Boundary data** | GADM ADM1 (provinces) + ADM3 (municipalities) |
+The page loads `data/Limpopo_Risk_Jan25_Jan26_Safe.csv` from the prototype repository. Despite its
+filename, the file contains monthly records across all nine South African provinces. It is a static
+file bundled with the frontend; the NCD page does not call the EO pipeline or backend API.
 
----
+| Input | Use in the page |
+|---|---|
+| `Air_Temp_C` | Show the mean of valid ward observations for the selected region and month |
+| `LST_Surface_C` | Show the mean of valid ward observations for the selected region and month |
+| `Population_Density_Per_KM2` | Show the mean of valid ward observations for the selected region and month |
+| `Month`, `Province`, `Municipali`, `WardID`, `WardLabel`, coordinates | Filter observations and place ward markers on the map |
 
-## Risk factors tracked
-
-| Factor | EO / Data source | Indicator |
-|--------|-----------------|-----------|
-| **Air quality** | Sentinel-5P TROPOMI | NO₂, PM₂.₅ proxy, AQI |
-| **Urban heat stress** | Landsat LST | LST deviation from baseline |
-| **Vegetation / green space** | Sentinel-2 NDVI | Green space access proxy |
-| **Built-up density** | ESA WorldCover Class 50 | Urban sprawl indicator |
-| **Access to healthcare** | Facility point data | Distance-to-clinic index |
-| **Lifestyle proxy** | WorldPop + land cover | Urban / sedentary classification |
-| **Obesity prevalence** | Survey-derived | % prevalence by province |
-
----
-
-## Country-level NCD risk scores (prototype)
-
-The prototype assigns baseline country-level NCD risk scores used for choropleth mapping:
-
-| Country | Risk score | Level |
-|---------|-----------|-------|
-| Zimbabwe | 63% | 🟠 Moderate-High |
-| South Africa | 58% | 🟡 Moderate |
-| Lesotho | 52% | 🟡 Moderate |
-| Botswana | 45% | 🟢 Moderate-Low |
-
-```javascript
-const countryNcdRisk = {
-  "South Africa": 58,
-  "Botswana":     45,
-  "Zimbabwe":     63,
-  "Lesotho":      52
-};
-```
-
-These values will be replaced by EO-derived, ward-level computed scores in Milestone 2.
-
----
+The three summary bars show the proportion of selected rows with a valid measurement. Regional
+values are unweighted means, not population-weighted exposure. Blank or invalid values remain
+unavailable rather than being converted to zero.
 
 ## Dashboard features
 
-### Country choropleth
+- Leaflet map with African country outlines and South African province boundaries.
+- Country, province, municipality, ward, and month selectors. CSV-backed ward observations are
+  available for South Africa; choosing another country does not produce CSV observations.
+- Ward observation markers and a historical monthly timeline. Markers represent observation
+  locations, not disease risk.
+- Environmental measurement summaries for air temperature, land surface temperature, and
+  population density.
+- Theme selection for system, light, and dark appearance.
+- No NCD score, risk category, forecast, alert, or disease outcome layer is currently calculated.
 
-On load, all four countries are rendered as coloured polygons using GADM Africa GeoJSON. Colour scale:
+## Why environmental exposure scoring is disabled
 
-| Risk | Fill colour |
-|------|------------|
-| ≥ 70% | `#d73027` (red) |
-| 55–69% | `#fc8d59` (orange) |
-| 40–54% | `#fee08b` (yellow) |
-| < 40% | `#91cf60` (green) |
+The proposed exposure method is documented in the prototype repository's
+[`docs/ncd-risk-scoring.md`](https://github.com/MEDICONSORTIUM/eoha-prototype/blob/main/docs/ncd-risk-scoring.md).
+The downloadable schema is available from the live
+[NCD Resource Center](https://eoha.co.za/pages/ncd-resource-center.html). The current monthly CSV does not provide all inputs or provenance
+required by that proposal, including daily PM2.5 and heat/cold measures. It also has no acquired
+health outcome data for validation. The schema therefore requires scoring to remain disabled and
+scores to remain null until input requirements, reference methods, and validation data are reviewed.
 
-### Province drill-down (South Africa)
+## Data limitations and next steps
 
-Clicking South Africa (or selecting it in the dropdown) loads provincial boundaries from `South_Africa_ADM1.geojson`. Each province is selectable and zooms the map.
+- Acquire and govern suitable disease outcome or health-survey data before claiming model
+  validation; define the outcome, geography, period, and linkage method.
+- Confirm environmental data sources, units, completeness, and provenance for each indicator.
+- Agree and freeze scoring reference periods and methods before enabling scores.
+- Keep exposure summaries separate from disease probability and clinical advice.
 
-### Municipality layer
-
-Selecting a province loads municipality centroids from `South_Africa_ADM3.geojson` as circle markers, populating the municipality dropdown.
-
-### Environmental & lifestyle panel
-
-Displays for the selected region:
-
-- Lifestyle type (urban / sedentary classification)
-- Population density (persons/km²)
-- Access to healthcare (% index)
-- Air Quality Index
-- Obesity prevalence
-
----
-
-## Data sources
-
-| Dataset | Description | Provider |
-|---------|-------------|----------|
-| `africa-countries.geo.json` | Country polygons | GADM |
-| `South_Africa_ADM1.geojson` | SA provincial boundaries | GADM |
-| `South_Africa_ADM3.geojson` | SA municipality centroids | GADM |
-| Sentinel-5P TROPOMI | Air quality (NO₂, CO) | ESA / GEE |
-| WorldPop | Population density | WorldPop |
-| ESA WorldCover | Land cover classification | ESA / GEE |
-
----
-
-## Roadmap
-
-| Phase | Planned enhancement |
-|-------|-------------------|
-| Milestone 2 | Replace static NCD scores with GEE-computed, ward-level values |
-| Milestone 2 | Add Sentinel-5P TROPOMI AQI layer to map |
-| Milestone 2 | Extend to Mozambique and Namibia |
-| Milestone 3 | Validate against SADHS health survey data |
-| Milestone 3 | Add time slider for NCD trend analysis (matching malaria module) |
+For the underlying file and its relationship to the separate data pipeline, see
+[Datasets](/docs/data/datasets) and [System Architecture](/docs/architecture/system-architecture).

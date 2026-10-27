@@ -48,9 +48,7 @@ const sidebars = {
     },
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TESTING — added Milestone 2 (May 2026)
-    // 365 automated tests: 267 Playwright outcomes + 98 pytest
-    // Run: 23 April 2026 · 264/267 Playwright passing · 98/98 pytest passing
+    // Testing pages describe the current prototype scripts and the separate pipeline suite.
     // ─────────────────────────────────────────────────────────────────────────
     {
       type: 'category',
@@ -69,7 +67,7 @@ const sidebars = {
         'milestones/overview',
         'milestones/milestone-1',
         'milestones/milestone-2',
-        
+        'milestones/milestone-3',
       ],
     },
     {

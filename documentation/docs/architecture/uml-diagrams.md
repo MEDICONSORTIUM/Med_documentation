@@ -8,6 +8,16 @@ sidebar_label: UML Diagrams
 
 Six UML diagrams documenting the MED Consortium platform architecture, behaviour and data model.
 
+:::caution Diagram images not updated this pass
+These SVGs were generated from the original Milestone 1 plan and contain figures/labels (record
+counts, GEE collections, infrastructure) that no longer match the as-built system — the same
+corrections applied to [System Architecture](/docs/architecture/system-architecture),
+[Data Architecture](/docs/design-specification/data-architecture), and
+[Datasets](/docs/data/datasets) were not re-applied to these image assets, since they'd need to be
+regenerated from source rather than hand-edited. Treat the prose pages linked throughout this site as
+authoritative; treat these diagrams as historical/illustrative until regenerated.
+:::
+
 | Diagram | Purpose |
 |---------|---------|
 | [Component](uml_component_diagram.svg) | System components and their interfaces |

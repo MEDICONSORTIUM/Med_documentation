@@ -2,14 +2,15 @@
 id: overview
 title: Milestones Overview
 sidebar_label: Overview
-description: Project milestones for the MED Consortium EOHA platform — Nov 2025 to Nov 2026.
+description: Current milestone status for the MED Consortium EOHA platform.
 ---
 
 # Milestones Overview
 
-The MED Consortium project runs from **November 2025 to October 2026** with a total budget of **R 1,000,000** across four milestones.
-
----
+The project is now in **Milestone 3 (Prototype Validation & Testing)**. Milestone 2's planned
+development period has ended. Its codebase review found that several forecast and integration
+targets remain unimplemented, so M3 records those as open work rather than treating the M2 plan as
+delivered functionality.
 
 ## Status summary
 
@@ -17,58 +18,64 @@ The MED Consortium project runs from **November 2025 to October 2026** with a to
 |---|-------|--------|--------|--------|
 | M0 | Compliance & onboarding | Oct 2025 | — | ✅ Complete |
 | M1 | System design & data architecture | Nov 2025 – Mar 2026 | R 250,000 | ✅ Complete |
-| **M2** | **Prototype development (PoC)** | **Mar – Aug 2026** | **R 500,000** | 🔵 **Active** |
-| M3 | Prototype validation & testing | Aug – Nov 2026 | R 250,000 | ⏳ Upcoming |
-
----
+| M2 | Prototype development (PoC) | Mar – Aug 2026 | R 500,000 | ✅ Period complete; open targets carried forward |
+| **M3** | **Prototype validation & testing** | **Aug – Nov 2026** | **R 250,000** | 🔵 **Active** |
 
 ## M0 — Compliance & Onboarding
-**Period:** October 2025 | **Status:** ✅ Complete
 
-Partner alignment completed. TuksNovation, NEOFrontiers EISF, SANSA, and NRF onboarded. Legal and IP agreements signed.
+**Period:** October 2025 | **Status:** Complete
 
----
+Partner alignment and onboarding were recorded in the project plan. See [partners and roles](/docs/project/partners).
 
 ## M1 — System Design & Data Architecture
-**Period:** November 2025 – March 2026 | **Status:** ✅ Complete
 
-Full system design delivered:
-- Cloud-network architecture (OpenShift/Kubernetes topology)
-- Two ERDs: Observation Prediction and User Management
-- Use case sets: Observation Prediction and User Management
-- Detailed use case descriptions (Create Malaria_Observation, Create Malaria_Risk_Forecast, Update Alert Status, etc.)
-- Domain model class diagrams
-- ETL pipeline architecture for both Malaria and NCD data streams
-- Wireframes for Home, Malaria, and NCD pages
-- Design Specification Document v2
+**Period:** November 2025 – March 2026 | **Status:** Complete
 
-📄 [View M1 deliverables →](/Med_documentation/docs/milestones/milestone-1)
+M1 produced the architecture, observation and user-management ERDs, use-case sets, domain model,
+pipeline designs, wireframes, and Design Specification Document v2. These are design artefacts;
+their inclusion does not establish that every designed service or data table exists in the running
+prototype. See [M1 deliverables](/docs/milestones/milestone-1).
 
----
+## M2 — Prototype Development
 
-## M2 — Prototype Development (PoC)
-**Period:** March – August 2026 | **Budget:** R 500,000 | **Status:** 🔵 Active
+**Period:** March – August 2026 | **Status:** Period complete; unfinished targets remain open
 
-The prototype phase builds the live, running system against the M1 design specification.
-
-### M2 targets
-
-- **Automated GEE pipeline** — Python Cloud Function ingesting Sentinel-2 and MODIS imagery every 8 days, computing zonal statistics per ward, writing to the Ward Risk store
-- **Server-side risk scoring** — `calculateDynamicRisk()` moves from browser to Cloud Run; enables real-time multi-municipality scoring
-- **XGBoost ML forecasting** — First live Malaria Risk Forecast pipeline producing `outbreak_probability_score` per zone
-- **NCD live data** — Copernicus/Sentinel atmospheric pipeline (NO2, SO2, aerosol, UV) replacing static baseline
-- **Alert engine integration** — `User_Risk_Alert` auto-created when `outbreak_probability_score > 0.80`
-- **Multi-country expansion** — SADHS ward geometries for Zimbabwe, Mozambique, and Zambia ingested
-
-📄 [View M2 page →](/Med_documentation/docs/milestones/milestone-2)
-
----
+The M2 implementation review found a monthly GEE ingestion job, but it did not find the planned
+XGBoost forecasting pipeline, NCD atmospheric data pipeline, Cloud Run risk-scoring service, alert
+engine, or multi-country ingestion. The public prototype is a separate dashboard that reads its
+own bundled environmental-observation CSV. See the [M2 implementation review](/docs/milestones/milestone-2).
 
 ## M3 — Prototype Validation & Testing
-**Period:** August – November 2026 | **Budget:** R 250,000 | **Status:** ⏳ Upcoming
 
-- Validation against SADHS survey-derived prevalence data
-- Model performance audit (Accuracy, Precision, Recall, ROC curves)
-- Business rules compliance testing (BR-01 through BR-04)
-- Domain rules verification (DR-01 through DR-04)
-- Final platform launch
+**Period:** August – November 2026 | **Budget:** R 250,000 | **Status:** Active
+
+M3 is focused on checking what is implemented, documenting limitations, and preparing a defensible
+validation process. The [Milestone 3 plan](/docs/milestones/milestone-3) tracks evidence and open
+dependencies.
+
+### Current data and validation position
+
+The current prototype data collection contains **environmental variables only**. Disease validation
+data has **not been acquired**. The current dataset therefore cannot support epidemiological model
+performance metrics or claims that the displayed environmental indicators predict disease outcomes.
+Software and pipeline tests can verify implementation behaviour and data handling, but they are not
+a substitute for outcome validation.
+
+### M3 work areas
+
+- Verify current dashboard behaviour, data handling, and pipeline contracts against the code that
+  exists.
+- Record defects, test results, data provenance, and known coverage gaps.
+- Plan accessibility, performance, and geographic coverage checks where the applicable feature and
+  data are available.
+- Acquire an approved, governed health-outcome or survey dataset and define the outcome, geography,
+  period, and linkage before attempting epidemiological validation.
+- Run a model performance audit only after a forecast model and suitable validation outcomes are
+  available; report Accuracy, Precision, Recall, and ROC/AUC only when they can be computed from
+  appropriate held-out data.
+- Keep predictive or clinical claims out of public-facing copy until the validation evidence has
+  been reviewed and approved.
+
+The planned SADHS comparison and model audit remain **blocked on outcome-data acquisition**. The
+model-performance dashboard described in the supplementary specification is a proposed reporting
+capability, not evidence that an audited model or validation dataset currently exists.

@@ -35,4 +35,4 @@ The Design Specification Document (v2) produced in M1 defines the full entity mo
 
 Our first sprint targets the Malaria pipeline end-to-end: GEE ingest → zonal statistics → XGBoost score → alert threshold check → `USER_RISK_ALERT` insert. Once that loop is closed on Limpopo data, we extend to NCD and begin multi-country boundary ingestion.
 
-Follow progress on the [Milestones page](/Med_documentation/docs/milestones/overview) and in the [live platform](https://main.d1jko0jkg4m7f.amplifyapp.com).
+Follow progress on the [Milestones page](/Med_documentation/docs/milestones/overview) and in the [live platform](https://www.eoha.co.za).

@@ -2,109 +2,91 @@
 id: data-architecture
 title: Data Architecture & ERDs
 sidebar_label: Data Architecture
-description: Entity Relationship Diagrams for the EOHA platform — Observation Prediction ERD and User Management ERD.
+description: As-built entity relationship diagram for the EOHA platform — only Zone and Malaria_Observation exist in the database today.
 ---
 
 # Data Architecture & Entity Relationship Diagrams
 
-The data architecture is split into two logical models: the **Observation Prediction** model (the core backend analytical engine) and the **User Management** model (access control and alerts). Both ERDs follow crow's-foot notation.
+:::caution As-built, not the original plan
+The original Milestone 1 data architecture defined six entities across two ERDs — an "Observation
+Prediction" model (`Zone`, `Malaria_Observation`, `NCD_Observation`, `Ground_Observation`,
+`Malaria_Risk_Forecast`, `NCD_Risk_Forecast`) and a "User Management" model (`User`, `Role`,
+`User_Risk_Alert`). **Only two of those six entities exist in the database today**, verified against
+both `eo-datapipeline`'s upsert logic and `eoha_backend`'s JPA entities. The other four, and the
+entire User Management model, have no table, no code, and no migration anywhere in any of the three
+repos. This page describes only what's real; the original six-entity ERD is preserved in the
+downloadable planning PDF on the [overview page](/docs/design-specification/overview).
+:::
 
 ---
 
-## Observation Prediction ERD
+## As-built entity relationship diagram
 
-This ERD maps the core backend entities. The `Zone` table is the spatial anchor — all observation and forecast tables relate to it via `zone_id`. The model supports dual-disease forecasting through parallel Malaria and NCD entity sets.
+```text
+┌──────────────────────────────────┐         ┌───────────────────────────────────────┐
+│  zone                             │         │  malaria_observation                    │
+│──────────────────────────────────│  1    ∞  │─────────────────────────────────────────│
+│  zone_id            PK (Integer)  │─────────▶│  env_record_id       PK (Integer, auto)  │
+│  parent_zone_id         Integer   │          │  zone_id             FK → zone.zone_id   │
+│  zone_name               String   │          │  date_recorded              LocalDate    │
+│  boundary_polygon        String   │          │  lst_surface_temp_c            Float     │
+│  base_population        Integer   │          │  soil_moisture_pct             Float     │
+│  dominant_habitat_code   String   │          │  ndvi_vegetation_index         Float     │
+│  external_zone_id        String   │          │  ndwi_water_index              Float     │
+│  zone_type                String  │          │  air_temp_c                    Float     │
+│  latitude                  Float  │          │  agric_percentage              Float     │
+│  longitude                 Float  │          └───────────────────────────────────────┘
+│  population_density_per_km2 Float │
+│  municipality_name        String  │
+│  province_name             String │
+└──────────────────────────────────┘
+```
 
-![EOHA Observation Prediction ERD — Zone, Malaria/NCD Observations, Malaria/NCD Risk Forecasts, Ground Observation](/assets/design-spec/EOHAERD.drawio.png)
+Source: [`eoha_backend/src/main/java/.../model/Zone.java`](https://github.com/MEDICONSORTIUM/eoha_backend/blob/main/src/main/java/com/eoha/eoha_backend/model/Zone.java) and
+[`MalariaObservation.java`](https://github.com/MEDICONSORTIUM/eoha_backend/blob/main/src/main/java/com/eoha/eoha_backend/model/MalariaObservation.java),
+cross-checked against `eo-datapipeline`'s upsert column lists — every column the pipeline writes
+matches the entity exactly.
 
 ### Entity summary
 
-| Entity | PK | Key fields | Purpose |
+| Entity | PK | Written by | Read by |
 |--------|----|-----------|---------|
-| `Zone` | `zone_id` | `parent_zone_id`, `boundary_polygon`, `base_population`, `dominant_habitat_code` | Spatial unit — ward / district / municipality |
-| `Malaria_Observation` | `env_record_id` | `zone_id` (FK), `lst_surface_temp_c`, `soil_moisture_pct`, `ndvi_vegetation_index`, `ndwi_water_index` | EO-derived environmental readings per zone per date |
-| `NCD_Observation` | `ncd_observation_id` | `zone_id` (FK), `no2_density`, `so2_density`, `aerosol_index`, `uv_radiation_index` | Atmospheric pollution readings per zone |
-| `Ground_Observation` | `case_record_id` | `zone_id` (FK), `disease_category`, `aggregated_case_count` | Clinically reported case counts |
-| `Malaria_Risk_Forecast` | `forecast_id` | `zone_id` (FK), `outbreak_probability_score`, `environmental_lag_days`, `model_version_used` | XGBoost-generated outbreak probability |
-| `NCD_Risk_Forecast` | `forecast_id` | `zone_id` (FK), `primary_ncd_category`, `population_exposure_score`, `projected_prevalence_increase` | NCD exposure and prevalence projections |
+| `zone` | `zone_id` | `eo-datapipeline` (`upsert_zone_rows`) | `eoha_backend` (`GET /api/zones/*`) |
+| `malaria_observation` | `env_record_id` (auto), unique on `(zone_id, date_recorded)` | `eo-datapipeline` (`upsert_observation_rows`) | `eoha_backend` (`GET /api/malaria-observations/*`) |
 
-### Key relationships
+`parent_zone_id` and `boundary_polygon` exist as columns on `zone` but are never populated by
+`eo-datapipeline` — no code anywhere sets them. The relationship between the two tables is a plain
+`zone_id` integer column; there is no JPA `@ManyToOne`/`@OneToMany` association, and no ORM-level
+cascade behaviour.
 
-- `Zone` → `Malaria_Observation`: one zone has many observations (1 to many)
-- `Zone` → `Ground_Observation`: one zone has many case reports (1 to many)
-- `Zone` → `Malaria_Risk_Forecast`: one zone has many forecasts (1 to many)
-- `Zone` is self-referencing via `parent_zone_id` (ward → district → municipality hierarchy)
+### Not implemented
 
----
+None of the following have a table, a migration, or a single line of persistence code in any of the
+three repos:
 
-## User Management ERD
-
-This ERD maps the access control and notification entities. `User` is the central entity, linked to a `Role` for permissions and to `User_Risk_Alert` for personalised outbreak warnings.
-
-![EOHA User Management ERD — User, Role, User_Risk_Alert](/assets/design-spec/UseCaseERD.drawio.png)
-
-### Entity summary
-
-| Entity | PK | Key fields | Purpose |
-|--------|----|-----------|---------|
-| `User` | `user_id` | `role_id` (FK), `email_address`, `password_hash`, `organization`, `first_name`, `last_name` | Platform user profile |
-| `Role` | `role_id` | `role_name`, `permissions` | RBAC role definition |
-| `User_Risk_Alert` | `alert_id` | `user_id` (FK), `forecast_id`, `alert_status`, `sent_timestamp` | Per-user alert record linked to a forecast |
-
-### Key relationships
-
-- `User` → `Role`: many users share one role (many to one)
-- `User_Risk_Alert` → `User`: many alerts per user (many to one)
-- `User_Risk_Alert.forecast_id` references either `Malaria_Risk_Forecast` or `NCD_Risk_Forecast`
-
-### Alert status lifecycle
-
-```
-[System creates forecast with score > 0.80]
-        ↓
-  alert_status = 'Active'
-        ↓
-  User acknowledges alert
-        ↓
-  alert_status = 'Acknowledged'
-        ↓
-  User resolves / closes
-        ↓
-  alert_status = 'Resolved'  →  moved to Historical view
-```
+| Entity from the original plan | Status |
+|---|---|
+| `NCD_Observation` | ❌ No table, no pipeline. `eo-datapipeline` extracts only malaria-relevant environmental variables (LST, NDVI, NDWI, soil moisture, agric %) — no NO2/SO2/aerosol/UV extraction exists anywhere. The NCD dashboard page in `eoha-prototype` shows hardcoded numbers, not queried data. |
+| `Ground_Observation` | ❌ No table, no ingestion path for clinical case counts |
+| `Malaria_Risk_Forecast` | ❌ No table, no ML pipeline, no XGBoost code anywhere |
+| `NCD_Risk_Forecast` | ❌ No table, no ML pipeline |
+| `User` | ❌ No table, no authentication code anywhere |
+| `Role` | ❌ No table |
+| `User_Risk_Alert` | ❌ No table, no alerting code, no email/SMS dispatch anywhere |
 
 ---
 
-## API Use Case ERD
+## Reconciling `zone_id` types across the pipeline
 
-The following diagram shows how the API layer relates to the use case model, connecting external actors to the system's REST endpoints.
+Both repos treat `zone_id` as an `Integer`. `eo-datapipeline` derives it via
+`pd.to_numeric(df['WardID'], errors='coerce')`, drops rows where it's non-numeric, and casts to
+`int` before upsert — so any ward whose source `WardID` isn't purely numeric is silently excluded
+from both tables.
 
-![EOHA API Use Case Diagram](/assets/design-spec/APIUseCase.drawio1.png)
+## Unverified assumption
 
----
-
-## NCD environmental indicators
-
-| Field | Description |
-|-------|-------------|
-| `UniqueID` | District/ward identifier |
-| `latitude` / `longitude` | Location coordinates |
-| `NO2_Column_Density` | Average NO2 exposure (mol/m²) |
-| `SO2_Column_Density` | Average SO2 exposure |
-| `Aerosol_Index_PM` | Particulate matter proxy |
-| `Aerosol_Index_Silica` | Silica aerosol index |
-| `UV_Index` | UV radiation level |
-| `LST_Mean_C` | Land surface temperature (°C) |
-| `Urban_Cover_Percentage` | Urban land cover ratio (%) |
-
-## Malaria environmental indicators
-
-| Field | Description |
-|-------|-------------|
-| `UniqueID` | District/ward identifier |
-| `latitude` / `longitude` | Location coordinates |
-| `LST_Surface_C` | Surface temperature (°C) |
-| `Soil_Moisture` | Volumetric soil moisture |
-| `NDWI_water` | Normalised Difference Water Index |
-| `Habitat_Vegetation_Index` | NDVI — vegetation suitability for vectors |
-| `Population_Density_Per_KM2` | Human-vector interaction proxy |
+`eo-datapipeline`'s `malaria_observation` upsert relies on `ON CONFLICT (zone_id, date_recorded)`,
+which requires a unique constraint on that column pair in the live schema. Neither repo contains a
+migration or DDL file defining it (`eoha_backend` runs with
+`spring.jpa.hibernate.ddl-auto=none`) — the constraint must exist directly on the RDS instance,
+outside version control, and could not be verified from source alone.
